@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ model.name }} - ML Playground{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cpu"></i> {{ model.name }}</h2>
+    <div class="btn-group">
+        <a href="{% url 'datasets:export_pdf' model.pk %}" class="btn btn-danger">
+            <i class="bi bi-file-pdf"></i> PDF
+        </a>
+        <a href="{% url 'datasets:export_excel' model.pk %}" class="btn btn-success">
+            <i class="bi bi-file-excel"></i> Excel
+        </a>
+        <a href="{% url 'datasets:model_delete' model.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Удалить
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Информация о модели</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Алгоритм:</strong> 
+                            <span class="badge bg-primary">{{ model.get_algorithm_display }}</span>
+                        </p>
+                        <p><strong>Датасет:</strong> 
+                            <a href="{% url 'datasets:dataset_detail' model.dataset.pk %}">
+                                {{ model.dataset.name }}
+                            </a>
+                        </p>
+                        <p><strong>Целевая переменная:</strong> {{ model.target_column }}</p>
+                        <p><strong>Описание:</strong> {{ model.description|default:"Не указано" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Дата создания:</strong> {{ model.created_at|date:"d.m.Y H:i" }}</p>
+                        <p><strong>Владелец:</strong> {{ model.owner.username }}</p>
+                        <p><strong>Файл модели:</strong> {{ model.model_file.name|basename }}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <p><strong>Используемые признаки:</strong></p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for feature in model.feature_columns %}
+                        <span class="badge bg-secondary">{{ feature }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Метрики производительности</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if model.accuracy %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Accuracy</h6>
+                                    <p class="display-6 mb-0">{{ model.accuracy|floatformat:4 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if model.f1_score %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">F1 Score</h6>
+                                    <p class="display-6 mb-0">{{ model.f1_score|floatformat:4 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if model.mse %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">MSE</h6>
+                                    <p class="display-6 mb-0">{{ model.mse|floatformat:4 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if model.rmse %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">RMSE</h6>
+                                    <p class="display-6 mb-0">{{ model.rmse|floatformat:4 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if model.r2_score %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">R² Score</h6>
+                                    <p class="display-6 mb-0">{{ model.r2_score|floatformat:4 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if model.confusion_matrix %}
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Confusion Matrix</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered text-center">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Predicted 0</th>
+                                <th>Predicted 1</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>Actual 0</th>
+                                <td class="bg-success-subtle">{{ model.confusion_matrix.0.0 }}</td>
+                                <td class="bg-danger-subtle">{{ model.confusion_matrix.0.1 }}</td>
+                            </tr>
+                            <tr>
+                                <th>Actual 1</th>
+                                <td class="bg-danger-subtle">{{ model.confusion_matrix.1.0 }}</td>
+                                <td class="bg-success-subtle">{{ model.confusion_matrix.1.1 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
