@@ -1,3 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
-# Create your models here.
+# Используем встроенную модель User Django
+# При необходимости можно расширить через Profile модель
