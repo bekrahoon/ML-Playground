@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои модели - ML Playground{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cpu"></i> Мои модели</h2>
+    <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Обучить новую модель
+    </a>
+</div>
+
+{% if models %}
+    <div class="row">
+        {% for model in models %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">{{ model.name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            <strong>Алгоритм:</strong><br>
+                            <span class="badge bg-primary">{{ model.get_algorithm_display }}</span>
+                        </p>
+                        <p class="mb-2">
+                            <strong>Датасет:</strong> {{ model.dataset.name }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Целевая переменная:</strong> {{ model.target_column }}
+                        </p>
+                        
+                        <hr>
+                        
+                        <div class="mb-2">
+                            <strong>Метрики:</strong>
+                        </div>
+                        
+                        {% if model.accuracy %}
+                            <p class="mb-1 small">
+                                <span class="badge bg-info">Accuracy: {{ model.accuracy|floatformat:4 }}</span>
+                            </p>
+                        {% endif %}
+                        
+                        {% if model.r2_score %}
+                            <p class="mb-1 small">
+                                <span class="badge bg-info">R²: {{ model.r2_score|floatformat:4 }}</span>
+                            </p>
+                        {% endif %}
+                        
+                        {% if model.rmse %}
+                            <p class="mb-1 small">
+                                <span class="badge bg-info">RMSE: {{ model.rmse|floatformat:4 }}</span>
+                            </p>
+                        {% endif %}
+                        
+                        <p class="card-text small text-muted mt-3">
+                            <i class="bi bi-calendar"></i> {{ model.created_at|date:"d.m.Y H:i" }}
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'datasets:model_detail' model.pk %}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-eye"></i> Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-robot display-1 text-muted"></i>
+        <p class="lead text-muted mt-3">У вас пока нет обученных моделей</p>
+        <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Обучить первую модель
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
