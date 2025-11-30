@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dataset.name }} - ML Playground{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-database"></i> {{ dataset.name }}</h2>
+    <div class="btn-group">
+        <a href="{% url 'datasets:model_create' dataset.pk %}" class="btn btn-success">
+            <i class="bi bi-robot"></i> Обучить модель
+        </a>
+        <a href="{% url 'datasets:dataset_update' dataset.pk %}" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Редактировать
+        </a>
+        <a href="{% url 'datasets:dataset_delete' dataset.pk %}" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Удалить
+        </a>
+    </div>
+</div>
+
+{% if error %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i> Ошибка при загрузке датасета: {{ error }}
+    </div>
+{% else %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация о датасете</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Описание:</strong> {{ dataset.description|default:"Не указано" }}</p>
+                            <p><strong>Строк:</strong> {{ dataset.rows_count }}</p>
+                            <p><strong>Колонок:</strong> {{ dataset.columns_count }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Создан:</strong> {{ dataset.created_at|date:"d.m.Y H:i" }}</p>
+                            <p><strong>Обновлен:</strong> {{ dataset.updated_at|date:"d.m.Y H:i" }}</p>
+                            <p><strong>Файл:</strong> {{ dataset.file.name|basename }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Предпросмотр данных (первые 10 строк)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                {{ preview|safe }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Статистика</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                {% for col, stats in info.describe.items %}
+                                    <tr>
+                                        <th>{{ col }}</th>
+                                        <td>
+                                            {% if stats.count %}
+                                                count: {{ stats.count|floatformat:0 }}<br>
+                                                mean: {{ stats.mean|floatformat:2 }}<br>
+                                                std: {{ stats.std|floatformat:2 }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Пропущенные значения</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Колонка</th>
+                                <th>Пропусков</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col, missing in info.missing_values.items %}
+                                <tr>
+                                    <td>{{ col }}</td>
+                                    <td>
+                                        {% if missing > 0 %}
+                                            <span class="badge bg-warning">{{ missing }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">0</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
