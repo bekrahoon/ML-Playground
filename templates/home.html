@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная - ML Playground{% endblock %}
+
+{% block content %}
+<div class="row mt-5">
+    <div class="col-lg-8 mx-auto text-center">
+        <h1 class="display-4 fw-bold mb-4">
+            <i class="bi bi-robot text-primary"></i> ML Playground
+        </h1>
+        <p class="lead text-muted mb-5">
+            Платформа для работы с машинным обучением. Загружайте датасеты, обучайте модели и экспортируйте результаты.
+        </p>
+        
+        {% if user.is_authenticated %}
+            <div class="row g-4 mb-5">
+                <div class="col-md-6">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body text-center">
+                            <i class="bi bi-database fs-1 text-primary mb-3"></i>
+                            <h5 class="card-title">Датасеты</h5>
+                            <p class="card-text">Загружайте и управляйте вашими CSV датасетами</p>
+                            <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary">
+                                Мои датасеты
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card h-100 border-success">
+                        <div class="card-body text-center">
+                            <i class="bi bi-cpu fs-1 text-success mb-3"></i>
+                            <h5 class="card-title">ML Модели</h5>
+                            <p class="card-text">Обучайте модели и анализируйте результаты</p>
+                            <a href="{% url 'datasets:model_list' %}" class="btn btn-success">
+                                Мои модели
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="d-flex gap-3 justify-content-center">
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-person-plus"></i> Регистрация
+                </a>
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Вход
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-lg-10 mx-auto">
+        <h3 class="text-center mb-4">Возможности платформы</h3>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="bi bi-upload fs-2 text-primary mb-3"></i>
+                        <h5 class="card-title">Загрузка данных</h5>
+                        <p class="card-text">Загружайте CSV файлы и просматривайте статистику данных</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="bi bi-graph-up fs-2 text-success mb-3"></i>
+                        <h5 class="card-title">Обучение моделей</h5>
+                        <p class="card-text">Используйте Linear Regression, Random Forest и другие алгоритмы</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="bi bi-file-earmark-pdf fs-2 text-danger mb-3"></i>
+                        <h5 class="card-title">Экспорт отчетов</h5>
+                        <p class="card-text">Экспортируйте результаты в PDF и Excel форматах</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
