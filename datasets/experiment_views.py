@@ -16,6 +16,24 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 
 
+def convert_numpy_types(obj):
+    """Конвертирует numpy типы в стандартные Python типы для JSON"""
+    import numpy as np
+    
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    else:
+        return obj
+
+
 @login_required
 def experiment_list(request):
     """Список всех экспериментов пользователя"""
@@ -211,18 +229,18 @@ def automl_create(request, dataset_pk):
         )
         
         if automl_results['success']:
-            # Сохраняем результаты
+            # Сохраняем результаты (конвертируем numpy типы)
             experiment.status = 'completed'
             experiment.completed_at = timezone.now()
             experiment.task_type = automl_results['task_type']
-            experiment.recommendations = automl_results['recommendations']
-            experiment.results_summary = {
+            experiment.recommendations = convert_numpy_types(automl_results['recommendations'])
+            experiment.results_summary = convert_numpy_types({
                 'preprocessing': automl_results['preprocessing_info'],
                 'models_count': len(automl_results['models'])
-            }
+            })
             
-            total_time = sum(m['training_time'] for m in automl_results['models'])
-            experiment.total_training_time = total_time
+            total_time = sum(float(m['training_time']) for m in automl_results['models'])
+            experiment.total_training_time = float(total_time)
             
             # Сохраняем модели
             for model_result in automl_results['models']:
@@ -238,14 +256,14 @@ def automl_create(request, dataset_pk):
                     training_time=model_result['training_time']
                 )
                 
-                # Метрики
+                # Метрики (конвертируем в float)
                 if 'accuracy' in model_result:
-                    ml_model.accuracy = model_result['accuracy']
-                    ml_model.f1_score = model_result['f1_score']
+                    ml_model.accuracy = float(model_result['accuracy'])
+                    ml_model.f1_score = float(model_result['f1_score'])
                 if 'r2_score' in model_result:
-                    ml_model.r2_score = model_result['r2_score']
-                    ml_model.mse = model_result['mse']
-                    ml_model.rmse = model_result['rmse']
+                    ml_model.r2_score = float(model_result['r2_score'])
+                    ml_model.mse = float(model_result['mse'])
+                    ml_model.rmse = float(model_result['rmse'])
                 
                 # Сохраняем pickle файл
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:

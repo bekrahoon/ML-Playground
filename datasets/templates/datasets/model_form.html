@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}Обучение модели - ML Playground{% endblock %}
+{% block title %}Обучение ML модели - ML Playground{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10 col-lg-8">
+    <div class="col-md-10">
         <div class="card">
             <div class="card-header bg-success text-white">
                 <h4 class="mb-0">
-                    <i class="bi bi-robot"></i> Обучение ML модели
+                    <i class="bi bi-cpu"></i> Обучение ML модели
                 </h4>
                 <p class="mb-0 small">Датасет: <strong>{{ dataset.name }}</strong></p>
             </div>
@@ -50,9 +50,6 @@
                                 {{ form.algorithm.errors }}
                             </div>
                         {% endif %}
-                        <div class="form-text">
-                            Выберите алгоритм машинного обучения для обучения модели
-                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -74,13 +71,19 @@
                         <label class="form-label">
                             Признаки (Features) <span class="text-danger">*</span>
                         </label>
-                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="selectAllFeatures">
+                                <label class="form-check-label fw-bold" for="selectAllFeatures">
+                                    Выбрать все
+                                </label>
+                            </div>
+                            <hr>
                             {% for col in columns %}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" 
-                                           name="feature_columns" value="{{ col }}"
-
-id="feature_{{ forloop.counter }}">
+                                    <input class="form-check-input feature-checkbox" type="checkbox" 
+                                           name="feature_columns" value="{{ col }}" 
+                                           id="feature_{{ forloop.counter }}">
                                     <label class="form-check-label" for="feature_{{ forloop.counter }}">
                                         {{ col }}
                                     </label>
@@ -90,11 +93,6 @@ id="feature_{{ forloop.counter }}">
                         <div class="form-text">
                             Выберите колонки, которые будут использоваться для обучения
                         </div>
-                    </div>
-                    
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Обратите внимание:</strong> Процесс обучения может занять некоторое время в зависимости от размера датасета.
                     </div>
                     
                     <div class="d-flex gap-2">
@@ -108,6 +106,46 @@ id="feature_{{ forloop.counter }}">
                 </form>
             </div>
         </div>
+        
+        <!-- Подсказки по алгоритмам -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Выбор алгоритма</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Для классификации:</h6>
+                        <ul>
+                            <li><strong>Logistic Regression</strong> - простая и быстрая</li>
+                            <li><strong>Decision Tree Classifier</strong> - интерпретируемая</li>
+                            <li><strong>Random Forest Classifier</strong> - высокая точность</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Для регрессии:</h6>
+                        <ul>
+                            <li><strong>Linear Regression</strong> - базовая модель</li>
+                            <li><strong>Decision Tree Regressor</strong> - нелинейные зависимости</li>
+                            <li><strong>Random Forest Regressor</strong> - лучшая точность</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <strong>Не знаете какой выбрать?</strong> Используйте 
+                    <a href="{% url 'datasets:automl_create' dataset.pk %}">AutoML</a> 
+                    для автоматического подбора!
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+// Checkbox "Выбрать все" для признаков
+document.getElementById('selectAllFeatures').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.feature-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+</script>
 {% endblock %}

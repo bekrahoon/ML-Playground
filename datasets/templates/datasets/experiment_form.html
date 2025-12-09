@@ -66,9 +66,16 @@
                             Признаки (Features) <span class="text-danger">*</span>
                         </label>
                         <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="selectAllFeatures">
+                                <label class="form-check-label fw-bold" for="selectAllFeatures">
+                                    Выбрать все
+                                </label>
+                            </div>
+                            <hr>
                             {% for col in columns %}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" 
+                                    <input class="form-check-input feature-checkbox" type="checkbox" 
                                            name="feature_columns" value="{{ col }}" 
                                            id="feature_{{ forloop.counter }}">
                                     <label class="form-check-label" for="feature_{{ forloop.counter }}">
@@ -156,4 +163,18 @@
         </div>
     </div>
 </div>
+
+<script>
+// Checkbox "Выбрать все" для признаков
+document.getElementById('selectAllFeatures').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.feature-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// Инициализация tooltips Bootstrap (если есть)
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+</script>
 {% endblock %}
