@@ -104,17 +104,28 @@ class MLModel(models.Model):
 class Experiment(models.Model):
     """ML Experiment - сравнение нескольких моделей"""
     
+    EXPERIMENT_TYPE_CHOICES = [
+        ('manual', 'Ручное сравнение'),
+        ('automl', 'AutoML'),
+    ]
+    
     name = models.CharField('Название эксперимента', max_length=200)
     description = models.TextField('Описание', blank=True)
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='experiments')
+    experiment_type = models.CharField('Тип эксперимента', max_length=20, 
+                                      choices=EXPERIMENT_TYPE_CHOICES, default='manual')
     
     # Параметры эксперимента
     target_column = models.CharField('Целевая переменная', max_length=100)
     feature_columns = models.JSONField('Признаки', default=list)
     test_size = models.FloatField('Размер тестовой выборки', default=0.2)
     
-    # Выбранные алгоритмы для сравнения
+    # Выбранные алгоритмы для сравнения (для manual режима)
     selected_algorithms = models.JSONField('Выбранные алгоритмы', default=list)
+    
+    # AutoML параметры
+    automl_settings = models.JSONField('Настройки AutoML', null=True, blank=True)
+    task_type = models.CharField('Тип задачи', max_length=20, null=True, blank=True)
     
     # Статус
     STATUS_CHOICES = [
@@ -134,6 +145,7 @@ class Experiment(models.Model):
         related_name='best_in_experiments'
     )
     results_summary = models.JSONField('Сводка результатов', null=True, blank=True)
+    recommendations = models.JSONField('Рекомендации', null=True, blank=True)
     
     # Метаданные
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='experiments')
@@ -147,7 +159,7 @@ class Experiment(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f'{self.name} ({self.status})'
+        return f'{self.name} ({self.get_experiment_type_display()} - {self.status})'
     
     def get_models_count(self):
         return self.models.count()
