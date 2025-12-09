@@ -20,6 +20,13 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
+                        <p><strong>Тип:</strong>
+                            {% if experiment.experiment_type == 'automl' %}
+                                <span class="badge bg-primary">AutoML</span>
+                            {% else %}
+                                <span class="badge bg-warning">Ручное сравнение</span>
+                            {% endif %}
+                        </p>
                         <p><strong>Статус:</strong>
                             {% if experiment.status == 'completed' %}
                                 <span class="badge bg-success">Завершено</span>
@@ -37,6 +44,15 @@
                             </a>
                         </p>
                         <p><strong>Целевая переменная:</strong> {{ experiment.target_column }}</p>
+                        {% if experiment.task_type %}
+                            <p><strong>Тип задачи:</strong>
+                                {% if experiment.task_type == 'classification' %}
+                                    Классификация
+                                {% else %}
+                                    Регрессия
+                                {% endif %}
+                            </p>
+                        {% endif %}
                         <p><strong>Описание:</strong> {{ experiment.description|default:"Не указано" }}</p>
                     </div>
                     <div class="col-md-6">
@@ -56,6 +72,32 @@
                             <strong>{{ experiment.best_model.get_algorithm_display }}</strong>
                             - <a href="{% url 'datasets:model_detail' experiment.best_model.pk %}">Посмотреть детали</a>
                         </p>
+                    </div>
+                {% endif %}
+                
+                <!-- AutoML Рекомендации -->
+                {% if experiment.recommendations %}
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="bi bi-lightbulb"></i> Рекомендации AutoML:</h6>
+                        <ul class="mb-0">
+                            {% for rec in experiment.recommendations %}
+                                <li>
+                                    {% if rec.type == 'best_model' %}
+                                        <strong>✅ {{ rec.text }}</strong>
+                                    {% elif rec.type == 'hyperparameters' %}
+                                        🎯 {{ rec.text }}
+                                    {% elif rec.type == 'data_quality' %}
+                                        ⚠️ {{ rec.text }}
+                                    {% elif rec.type == 'data_size' %}
+                                        📊 {{ rec.text }}
+                                    {% elif rec.type == 'alternatives' %}
+                                        💡 {{ rec.text }}
+                                    {% else %}
+                                        {{ rec.text }}
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 {% endif %}
             </div>
