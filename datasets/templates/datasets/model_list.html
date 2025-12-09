@@ -5,8 +5,8 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-cpu"></i> Мои модели</h2>
-    <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Обучить новую модель
+    <a href="{% url 'datasets:dataset_list' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> К датасетам
     </a>
 </div>
 
@@ -14,21 +14,41 @@
     <div class="row">
         {% for model in models %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">{{ model.name }}</h5>
+                <div class="card h-100 {% if model.experiment and model.experiment.best_model == model %}border-success border-2{% endif %}">
+                    <div class="card-header {% if model.experiment and model.experiment.best_model == model %}bg-success{% else %}bg-primary{% endif %} text-white">
+                        <h5 class="mb-0">
+                            {% if model.experiment and model.experiment.best_model == model %}
+                                <i class="bi bi-trophy-fill"></i>
+                            {% endif %}
+                            {{ model.name|truncatechars:30 }}
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <p class="mb-2">
-                            <strong>Алгоритм:</strong><br>
+                        <div class="mb-2">
+                            <strong>Алгоритм:</strong>
                             <span class="badge bg-primary">{{ model.get_algorithm_display }}</span>
-                        </p>
-                        <p class="mb-2">
-                            <strong>Датасет:</strong> {{ model.dataset.name }}
-                        </p>
-                        <p class="mb-2">
-                            <strong>Целевая переменная:</strong> {{ model.target_column }}
-                        </p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>Датасет:</strong>
+                            <a href="{% url 'datasets:dataset_detail' model.dataset.pk %}">
+                                {{ model.dataset.name }}
+                            </a>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>Целевая переменная:</strong>
+                            <code>{{ model.target_column }}</code>
+                        </div>
+                        
+                        {% if model.experiment %}
+                            <div class="mb-2">
+                                <strong>Эксперимент:</strong>
+                                <a href="{% url 'datasets:experiment_detail' model.experiment.pk %}">
+                                    {{ model.experiment.name }}
+                                </a>
+                            </div>
+                        {% endif %}
                         
                         <hr>
                         
@@ -37,31 +57,103 @@
                         </div>
                         
                         {% if model.accuracy %}
-                            <p class="mb-1 small">
-                                <span class="badge bg-info">Accuracy: {{ model.accuracy|floatformat:4 }}</span>
-                            </p>
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-bullseye text-success"></i> Accuracy:</span>
+                                <strong>{{ model.accuracy|floatformat:4 }}</strong>
+                            </div>
+                        {% endif %}
+                        
+                        {% if model.f1_score %}
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-graph-up text-info"></i> F1 Score:</span>
+                                <strong>{{ model.f1_score|floatformat:4 }}</strong>
+                            </div>
                         {% endif %}
                         
                         {% if model.r2_score %}
-                            <p class="mb-1 small">
-                                <span class="badge bg-info">R²: {{ model.r2_score|floatformat:4 }}</span>
-                            </p>
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-bar-chart text-primary"></i> R² Score:</span>
+                                <strong>{{ model.r2_score|floatformat:4 }}</strong>
+                            </div>
                         {% endif %}
                         
                         {% if model.rmse %}
-                            <p class="mb-1 small">
-                                <span class="badge bg-info">RMSE: {{ model.rmse|floatformat:4 }}</span>
-                            </p>
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-dash-circle text-warning"></i> RMSE:</span>
+                                <strong>{{ model.rmse|floatformat:4 }}</strong>
+                            </div>
                         {% endif %}
                         
-                        <p class="card-text small text-muted mt-3">
+                        <hr>
+                        
+                        <p class="card-text small text-muted mb-0">
                             <i class="bi bi-calendar"></i> {{ model.created_at|date:"d.m.Y H:i" }}
                         </p>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <a href="{% url 'datasets:model_detail' model.pk %}" class="btn btn-sm btn-outline-primary w-100">
-                            <i class="bi bi-eye"></i> Подробнее
-                        </a>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'datasets:model_detail' model.pk %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i> Подробнее
+                            </a>
+                            
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'datasets:export_pdf' model.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-file-pdf"></i> PDF
+                                </a>
+                                <a href="{% url 'datasets:export_excel' model.pk %}" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-file-excel"></i> Excel
+                                </a>
+                            </div>
+                            
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal{{ model.pk }}">
+                                <i class="bi bi-trash"></i> Удалить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal для подтверждения удаления -->
+            <div class="modal fade" id="deleteModal{{ model.pk }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-exclamation-triangle"></i> Подтверждение удаления
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Вы уверены, что хотите удалить модель <strong>"{{ model.name }}"</strong>?</p>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Внимание!</strong> Это действие нельзя отменить.
+                                Файл модели (.pkl) будет удален навсегда.
+                            </div>
+                            <div class="mb-2">
+                                <strong>Информация о модели:</strong>
+                            </div>
+                            <ul>
+                                <li>Алгоритм: {{ model.get_algorithm_display }}</li>
+                                <li>Датасет: {{ model.dataset.name }}</li>
+                                {% if model.experiment %}
+                                    <li>Часть эксперимента: {{ model.experiment.name }}</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Отмена
+                            </button>
+                            <form method="post" action="{% url 'datasets:model_delete' model.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Удалить модель
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -69,10 +161,11 @@
     </div>
 {% else %}
     <div class="text-center py-5">
-        <i class="bi bi-robot display-1 text-muted"></i>
+        <i class="bi bi-cpu display-1 text-muted"></i>
         <p class="lead text-muted mt-3">У вас пока нет обученных моделей</p>
-        <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Обучить первую модель
+        <p class="text-muted">Загрузите датасет и обучите свою первую модель</p>
+        <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary mt-3">
+            <i class="bi bi-database"></i> Перейти к датасетам
         </a>
     </div>
 {% endif %}
