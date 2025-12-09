@@ -1,66 +1,68 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+
+{% block title %}Регистрация - ML Playground{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-
-            <h2 class="mb-4 text-center">Регистрация</h2>
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} mb-3">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            <div class="card shadow-sm p-4">
-                <form method="POST" novalidate>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">
+                    <i class="bi bi-person-plus"></i> Регистрация
+                </h3>
+                
+                <form method="post">
                     {% csrf_token %}
-
+                    
                     <div class="mb-3">
                         {{ form.username.label_tag }}
                         {{ form.username }}
                         {% if form.username.errors %}
-                            <div class="text-danger small">{{ form.username.errors.0 }}</div>
+                            <div class="text-danger small mt-1">
+                                {{ form.username.errors }}
+                            </div>
                         {% endif %}
                     </div>
-
+                    
                     <div class="mb-3">
                         {{ form.email.label_tag }}
                         {{ form.email }}
                         {% if form.email.errors %}
-                            <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                            <div class="text-danger small mt-1">
+                                {{ form.email.errors }}
+                            </div>
                         {% endif %}
                     </div>
-
+                    
                     <div class="mb-3">
                         {{ form.password1.label_tag }}
                         {{ form.password1 }}
                         {% if form.password1.errors %}
-                            <div class="text-danger small">{{ form.password1.errors.0 }}</div>
+                            <div class="text-danger small mt-1">
+                                {{ form.password1.errors }}
+                            </div>
                         {% endif %}
                     </div>
-
+                    
                     <div class="mb-3">
                         {{ form.password2.label_tag }}
                         {{ form.password2 }}
                         {% if form.password2.errors %}
-                            <div class="text-danger small">{{ form.password2.errors.0 }}</div>
+                            <div class="text-danger small mt-1">
+                                {{ form.password2.errors }}
+                            </div>
                         {% endif %}
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100 mt-3">Создать аккаунт</button>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        Зарегистрироваться
+                    </button>
+                    
+                    <div class="text-center">
+                        <p class="mb-0">Уже есть аккаунт? <a href="{% url 'accounts:login' %}">Войдите</a></p>
+                    </div>
                 </form>
-
-                <p class="text-center mt-3">
-                    Уже есть аккаунт?
-                    <a href="{% url 'login' %}">Войти</a>
-                </p>
             </div>
-
         </div>
     </div>
 </div>
