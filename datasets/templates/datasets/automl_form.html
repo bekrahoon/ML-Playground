@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoML - ML Playground{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-robot"></i> AutoML - Автоматический подбор модели
+                </h4>
+                <p class="mb-0 small">Датасет: <strong>{{ dataset.name }}</strong></p>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-magic"></i> Что делает AutoML?</h5>
+                    <ul class="mb-0">
+                        <li>✅ Автоматически определяет тип задачи (классификация/регрессия)</li>
+                        <li>✅ Подбирает оптимальные алгоритмы</li>
+                        <li>✅ Настраивает гиперпараметры с помощью GridSearch</li>
+                        <li>✅ Проводит кросс-валидацию для надежной оценки</li>
+                        <li>✅ Предобрабатывает данные автоматически</li>
+                        <li>✅ Выбирает лучшую модель и дает рекомендации</li>
+                    </ul>
+                </div>
+                
+                <form method="post" id="automlForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Название эксперимента <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" name="name" class="form-control" 
+                               placeholder="Например: AutoML - Предсказание оттока" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="2" 
+                                  placeholder="Опишите цель эксперимента"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Целевая переменная (Target) <span class="text-danger">*</span>
+                        </label>
+                        <select name="target_column" class="form-select" required>
+                            <option value="">Выберите колонку...</option>
+                            {% for col in columns %}
+                                <option value="{{ col }}">{{ col }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> 
+                            AutoML автоматически определит, это классификация или регрессия
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Признаки (Features)
+                            <span class="badge bg-secondary">Опционально</span>
+                        </label>
+                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                <label class="form-check-label fw-bold" for="selectAll">
+                                    Выбрать все
+                                </label>
+                            </div>
+                            <hr>
+                            {% for col in columns %}
+                                <div class="form-check">
+                                    <input class="form-check-input feature-checkbox" type="checkbox" 
+                                           name="feature_columns" value="{{ col }}" 
+                                           id="feature_{{ forloop.counter }}">
+                                    <label class="form-check-label" for="feature_{{ forloop.counter }}">
+                                        {{ col }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> 
+                            Если не выбрано, будут использованы все колонки кроме целевой
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                Размер тестовой выборки
+                                <i class="bi bi-question-circle" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Доля данных для оценки модели"></i>
+                            </label>
+                            <input type="number" name="test_size" class="form-control" 
+                                   value="0.2" min="0.1" max="0.5" step="0.05">
+                            <div class="form-text">По умолчанию 0.2 (20%)</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                Кросс-валидация (фолды)
+                                <i class="bi bi-question-circle" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Количество разбиений для оценки"></i>
+                            </label>
+                            <input type="number" name="cv_folds" class="form-control" 
+                                   value="5" min="2" max="10" step="1">
+                            <div class="form-text">По умолчанию 5 фолдов</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-clock"></i> Время обучения</h6>
+                        <p class="mb-0">
+                            AutoML подбирает гиперпараметры и может занять <strong>несколько минут</strong>
+                            в зависимости от размера датасета. Это нормально - система тестирует 
+                            множество комбинаций параметров!
+                        </p>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-robot"></i> Запустить AutoML
+                        </button>
+                        <a href="{% url 'datasets:dataset_detail' dataset.pk %}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Подсказки -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Советы для AutoML</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><strong>Качество данных:</strong> Чем меньше пропусков и выбросов, тем лучше результат</li>
+                    <li><strong>Размер данных:</strong> Рекомендуется минимум 100 строк для надежных результатов</li>
+                    <li><strong>Целевая переменная:</strong> Для классификации используйте категориальные значения</li>
+                    <li><strong>Признаки:</strong> Можно не выбирать - AutoML сам определит важные</li>
+                    <li><strong>Время:</strong> Для больших датасетов (1000+ строк) может потребоваться 5-10 минут</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Сравнение с Manual Experiments -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">AutoML vs Ручное сравнение</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-robot text-primary"></i> AutoML</h6>
+                        <ul>
+                            <li>✅ Автоматический подбор гиперпараметров</li>
+                            <li>✅ Кросс-валидация</li>
+                            <li>✅ Предобработка данных</li>
+                            <li>✅ Рекомендации</li>
+                            <li>⏰ Дольше обучается</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-sliders text-warning"></i> Ручное сравнение</h6>
+                        <ul>
+                            <li>✅ Быстрое обучение</li>
+                            <li>✅ Полный контроль</li>
+                            <li>✅ Выбор конкретных алгоритмов</li>
+                            <li>❌ Без подбора параметров</li>
+                            <li>❌ Без рекомендаций</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'datasets:experiment_create' dataset.pk %}" class="btn btn-warning">
+                        <i class="bi bi-sliders"></i> Или создать ручной эксперимент
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Checkbox "Выбрать все"
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.feature-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// Инициализация tooltips Bootstrap
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+</script>
+{% endblock %}
