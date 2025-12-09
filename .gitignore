@@ -205,3 +205,47 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+pycache/
+*.pyc
+env/
+venv/
+ENV/
+.venv
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/media/
+/static/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# ML models and datasets (large files)
+*.pkl
+*.csv
+*.xlsx
+*.pdf
+
+# Except example files
+!example_dataset.csv
