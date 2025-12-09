@@ -9,6 +9,7 @@ from .models import Dataset, Experiment, MLModel
 from .forms import ExperimentForm
 from .experiment_utils import run_experiment, get_comparison_data
 from .automl_utils import run_automl
+from .dataset_library import get_all_datasets, get_dataset_info, import_dataset_for_user
 import pickle
 import tempfile
 import os
@@ -302,3 +303,31 @@ def automl_create(request, dataset_pk):
         'dataset': dataset,
         'columns': get_columns(dataset)
     })
+
+
+@login_required
+def dataset_library(request):
+    """Библиотека встроенных датасетов"""
+    datasets = get_all_datasets()
+    
+    # Группируем по сложности
+    beginner_datasets = {k: v for k, v in datasets.items() if v['difficulty'] == 'beginner'}
+    intermediate_datasets = {k: v for k, v in datasets.items() if v['difficulty'] == 'intermediate'}
+    
+    return render(request, 'datasets/dataset_library.html', {
+        'beginner_datasets': beginner_datasets,
+        'intermediate_datasets': intermediate_datasets,
+        'all_datasets': datasets
+    })
+
+
+@login_required
+def import_dataset(request, dataset_id):
+    """Импорт встроенного датасета"""
+    try:
+        dataset = import_dataset_for_user(dataset_id, request.user)
+        messages.success(request, f'✅ Датасет "{dataset.name}" успешно импортирован!')
+        return redirect('datasets:dataset_detail', pk=dataset.pk)
+    except Exception as e:
+        messages.error(request, f'Ошибка импорта: {str(e)}')
+        return redirect('datasets:dataset_library')

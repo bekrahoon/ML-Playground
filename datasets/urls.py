@@ -8,6 +8,8 @@ urlpatterns = [
     # Dataset URLs
     path('', views.dataset_list, name='dataset_list'),
     path('create/', views.dataset_create, name='dataset_create'),
+    path('library/', experiment_views.dataset_library, name='dataset_library'),
+    path('library/import/<str:dataset_id>/', experiment_views.import_dataset, name='import_dataset'),
     path('<int:pk>/', views.dataset_detail, name='dataset_detail'),
     path('<int:pk>/update/', views.dataset_update, name='dataset_update'),
     path('<int:pk>/delete/', views.dataset_delete, name='dataset_delete'),
