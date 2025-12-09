@@ -35,7 +35,6 @@ class Dataset(models.Model):
         return self.name
     
     def delete(self, *args, **kwargs):
-        # Удаляем файл при удалении объекта
         if self.file:
             if os.path.isfile(self.file.path):
                 os.remove(self.file.path)
@@ -74,8 +73,18 @@ class MLModel(models.Model):
         validators=[FileExtensionValidator(allowed_extensions=['pkl'])]
     )
     
+    # Связь с экспериментом (опционально)
+    experiment = models.ForeignKey(
+        'Experiment', 
+        on_delete=models.CASCADE, 
+        related_name='models',
+        null=True,
+        blank=True
+    )
+    
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ml_models')
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+    training_time = models.FloatField('Время обучения (сек)', null=True, blank=True)
     
     class Meta:
         verbose_name = 'ML Модель'
@@ -86,8 +95,64 @@ class MLModel(models.Model):
         return f'{self.name} ({self.get_algorithm_display()})'
     
     def delete(self, *args, **kwargs):
-        # Удаляем файл модели при удалении объекта
         if self.model_file:
             if os.path.isfile(self.model_file.path):
                 os.remove(self.model_file.path)
         super().delete(*args, **kwargs)
+
+
+class Experiment(models.Model):
+    """ML Experiment - сравнение нескольких моделей"""
+    
+    name = models.CharField('Название эксперимента', max_length=200)
+    description = models.TextField('Описание', blank=True)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='experiments')
+    
+    # Параметры эксперимента
+    target_column = models.CharField('Целевая переменная', max_length=100)
+    feature_columns = models.JSONField('Признаки', default=list)
+    test_size = models.FloatField('Размер тестовой выборки', default=0.2)
+    
+    # Выбранные алгоритмы для сравнения
+    selected_algorithms = models.JSONField('Выбранные алгоритмы', default=list)
+    
+    # Статус
+    STATUS_CHOICES = [
+        ('pending', 'Ожидание'),
+        ('running', 'Обучение'),
+        ('completed', 'Завершено'),
+        ('failed', 'Ошибка'),
+    ]
+    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Результаты
+    best_model = models.ForeignKey(
+        MLModel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='best_in_experiments'
+    )
+    results_summary = models.JSONField('Сводка результатов', null=True, blank=True)
+    
+    # Метаданные
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='experiments')
+    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+    completed_at = models.DateTimeField('Дата завершения', null=True, blank=True)
+    total_training_time = models.FloatField('Общее время обучения (сек)', null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Эксперимент'
+        verbose_name_plural = 'Эксперименты'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f'{self.name} ({self.status})'
+    
+    def get_models_count(self):
+        return self.models.count()
+    
+    def get_best_algorithm(self):
+        if self.best_model:
+            return self.best_model.get_algorithm_display()
+        return None
