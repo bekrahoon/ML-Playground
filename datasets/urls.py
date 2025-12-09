@@ -25,6 +25,7 @@ urlpatterns = [
     # Experiment URLs
     path('experiments/', experiment_views.experiment_list, name='experiment_list'),
     path('<int:dataset_pk>/experiment/create/', experiment_views.experiment_create, name='experiment_create'),
+    path('<int:dataset_pk>/automl/create/', experiment_views.automl_create, name='automl_create'),
     path('experiments/<int:pk>/', experiment_views.experiment_detail, name='experiment_detail'),
     path('experiments/<int:pk>/delete/', experiment_views.experiment_delete, name='experiment_delete'),
     path('experiments/<int:pk>/compare/json/', experiment_views.experiment_compare_json, name='experiment_compare_json'),
