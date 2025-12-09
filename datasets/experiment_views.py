@@ -86,6 +86,8 @@ def experiment_create(request, dataset_pk):
 @login_required
 def experiment_detail(request, pk):
     """Детальная информация об эксперименте"""
+    import json
+    
     experiment = get_object_or_404(Experiment, pk=pk)
     
     # Проверка доступа
@@ -101,7 +103,8 @@ def experiment_detail(request, pk):
     return render(request, 'datasets/experiment_detail.html', {
         'experiment': experiment,
         'models': models,
-        'comparison_data': comparison_data
+        'comparison_data': comparison_data,
+        'comparison_data_json': json.dumps(comparison_data) if comparison_data else None
     })
 
 

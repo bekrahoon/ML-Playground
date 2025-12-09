@@ -123,7 +123,7 @@
 </div>
 
 <!-- Графики сравнения -->
-{% if comparison_data %}
+{% if comparison_data_json %}
 <div class="row">
     <div class="col-md-6 mb-4">
         <div class="card">
@@ -131,7 +131,7 @@
                 <h6 class="mb-0">Время обучения</h6>
             </div>
             <div class="card-body">
-                <canvas id="trainingTimeChart"></canvas>
+                <canvas id="trainingTimeChart" height="300"></canvas>
             </div>
         </div>
     </div>
@@ -140,11 +140,11 @@
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0">
-                    {% if comparison_data.is_classification %}Accuracy{% else %}R² Score{% endif %}
+                    Метрики
                 </h6>
             </div>
             <div class="card-body">
-                <canvas id="metricsChart"></canvas>
+                <canvas id="metricsChart" height="300"></canvas>
             </div>
         </div>
     </div>
@@ -155,63 +155,71 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if comparison_data %}
+{% if comparison_data_json %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // Данные из Django
-const comparisonData = {{ comparison_data|safe }};
+const comparisonData = {{ comparison_data_json|safe }};
+
+console.log('Comparison Data:', comparisonData); // Для отладки
 
 // График времени обучения
-const trainingTimeCtx = document.getElementById('trainingTimeChart').getContext('2d');
-new Chart(trainingTimeCtx, {
-    type: 'bar',
-    data: {
-        labels: comparisonData.labels,
-        datasets: [{
-            label: 'Время обучения (сек)',
-            data: comparisonData.training_times,
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true
+const trainingTimeCtx = document.getElementById('trainingTimeChart');
+if (trainingTimeCtx) {
+    new Chart(trainingTimeCtx, {
+        type: 'bar',
+        data: {
+            labels: comparisonData.labels,
+            datasets: [{
+                label: 'Время обучения (сек)',
+                data: comparisonData.training_times,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
             }
         }
-    }
-});
+    });
+}
 
 // График метрик
-const metricsCtx = document.getElementById('metricsChart').getContext('2d');
-const metricsData = comparisonData.is_classification ? comparisonData.accuracy : comparisonData.r2_score;
-const metricsLabel = comparisonData.is_classification ? 'Accuracy' : 'R² Score';
+const metricsCtx = document.getElementById('metricsChart');
+if (metricsCtx) {
+    const metricsData = comparisonData.is_classification ? comparisonData.accuracy : comparisonData.r2_score;
+    const metricsLabel = comparisonData.is_classification ? 'Accuracy' : 'R² Score';
 
-new Chart(metricsCtx, {
-    type: 'bar',
-    data: {
-        labels: comparisonData.labels,
-        datasets: [{
-            label: metricsLabel,
-            data: metricsData,
-            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 1
+    new Chart(metricsCtx, {
+        type: 'bar',
+        data: {
+            labels: comparisonData.labels,
+            datasets: [{
+                label: metricsLabel,
+                data: metricsData,
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1
+                }
             }
         }
-    }
-});
+    });
+}
 </script>
 {% endif %}
 {% endblock %}
