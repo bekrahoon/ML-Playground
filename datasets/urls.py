@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import experiment_views
 
 app_name = 'datasets'
 
@@ -20,4 +21,11 @@ urlpatterns = [
     # Export URLs
     path('models/<int:pk>/export/pdf/', views.export_pdf, name='export_pdf'),
     path('models/<int:pk>/export/excel/', views.export_excel, name='export_excel'),
+    
+    # Experiment URLs
+    path('experiments/', experiment_views.experiment_list, name='experiment_list'),
+    path('<int:dataset_pk>/experiment/create/', experiment_views.experiment_create, name='experiment_create'),
+    path('experiments/<int:pk>/', experiment_views.experiment_detail, name='experiment_detail'),
+    path('experiments/<int:pk>/delete/', experiment_views.experiment_delete, name='experiment_delete'),
+    path('experiments/<int:pk>/compare/json/', experiment_views.experiment_compare_json, name='experiment_compare_json'),
 ]
