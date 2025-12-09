@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if dataset %}Редактирование{% else %}Загрузка{% endif %} датасета - ML Playground
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-upload"></i>
+                    {% if dataset %}Редактирование датасета{% else %}Загрузка датасета{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            Название датасета <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.name.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            Описание
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.description.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.file.id_for_label }}" class="form-label">
+                            CSV файл <span class="text-danger">*</span>
+                        </label>
+                        {{ form.file }}
+                        {% if form.file.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.file.errors }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Поддерживаются только CSV файлы (максимум 10 МБ)
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i>
+                            {% if dataset %}Сохранить изменения{% else %}Загрузить датасет{% endif %}
+                        </button>
+                        <a href="{% url 'datasets:dataset_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
