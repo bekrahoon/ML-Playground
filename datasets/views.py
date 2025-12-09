@@ -107,7 +107,6 @@ def dataset_update(request, pk):
     
     return render(request, 'datasets/dataset_form.html', {'form': form, 'dataset': dataset})
 
-
 @login_required
 def dataset_delete(request, pk):
     """Удаление датасета"""
@@ -124,6 +123,115 @@ def dataset_delete(request, pk):
     
     return render(request, 'datasets/dataset_confirm_delete.html', {'dataset': dataset})
 
+# ============== ML MODEL VIEWS ==============
+
+@login_required
+def model_list(request):
+    """Список всех моделей пользователя"""
+    models = MLModel.objects.filter(owner=request.user)
+    return render(request, 'datasets/model_list.html', {'models': models})
+
+
+@login_required
+def model_create(request, dataset_pk):
+    """Создание и обучение новой ML модели"""
+    dataset = get_object_or_404(Dataset, pk=dataset_pk)
+    
+    # Проверка доступа
+    if dataset.owner != request.user:
+        return HttpResponseForbidden('У вас нет доступа к этому датасету')
+    
+    if request.method == 'POST':
+        form = MLModelForm(request.POST, dataset=dataset)
+        
+        if form.is_valid():
+            # Получаем выбранные признаки
+            feature_columns = request.POST.getlist('feature_columns')
+            
+            if not feature_columns:
+                messages.error(request, 'Выберите хотя бы один признак!')
+                return render(request, 'datasets/model_form.html', {
+                    'form': form,
+                    'dataset': dataset,
+                    'columns': get_columns(dataset)
+                })
+            
+            # Обучаем модель
+            model_obj, metrics, error = train_ml_model(
+                dataset.file.path,
+                form.cleaned_data['algorithm'],
+                form.cleaned_data['target_column'],
+                feature_columns
+            )
+            
+            if error:
+                messages.error(request, error)
+                return render(request, 'datasets/model_form.html', {
+                    'form': form,
+                    'dataset': dataset,
+                    'columns': get_columns(dataset)
+                })
+            
+            # Сохраняем модель
+            ml_model = form.save(commit=False)
+            ml_model.dataset = dataset
+            ml_model.owner = request.user
+            ml_model.feature_columns = feature_columns
+            
+            # Сохраняем метрики
+            if 'accuracy' in metrics:
+                ml_model.accuracy = metrics['accuracy']
+            if 'f1_score' in metrics:
+                ml_model.f1_score = metrics['f1_score']
+            if 'mse' in metrics:
+                ml_model.mse = metrics['mse']
+            if 'rmse' in metrics:
+                ml_model.rmse = metrics['rmse']
+            if 'r2_score' in metrics:
+                ml_model.r2_score = metrics['r2_score']
+            if 'confusion_matrix' in metrics:
+                ml_model.confusion_matrix = metrics['confusion_matrix']
+            
+            # Сохраняем pickle файл модели
+            import pickle
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
+                pickle.dump(model_obj, tmp)
+                tmp.flush()
+                
+                with open(tmp.name, 'rb') as f:
+                    ml_model.model_file.save(
+                        f'{ml_model.name}.pkl',
+                        ContentFile(f.read()),
+                        save=False
+                    )
+                
+                os.unlink(tmp.name)
+            
+            ml_model.save()
+            
+            messages.success(request, 'Модель успешно обучена!')
+            return redirect('datasets:model_detail', pk=ml_model.pk)
+    else:
+        form = MLModelForm(dataset=dataset)
+    
+    return render(request, 'datasets/model_form.html', {
+        'form': form,
+        'dataset': dataset,
+        'columns': get_columns(dataset)
+    })
+
+
+@login_required
+def model_detail(request, pk):
+    """Детальная информация о модели"""
+    model = get_object_or_404(MLModel, pk=pk)
+    
+    # Проверка доступа
+    if model.owner != request.user:
+        return HttpResponseForbidden('У вас нет доступа к этой модели')
+    
+    return render(request, 'datasets/model_detail.html', {'model': model})
 
 @login_required
 def model_delete(request, pk):
