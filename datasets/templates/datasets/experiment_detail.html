@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ experiment.name }} - ML Playground{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up"></i> {{ experiment.name }}</h2>
+    <a href="{% url 'datasets:experiment_delete' experiment.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-trash"></i> Удалить
+    </a>
+</div>
+
+<!-- Информация об эксперименте -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Информация об эксперименте</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Статус:</strong>
+                            {% if experiment.status == 'completed' %}
+                                <span class="badge bg-success">Завершено</span>
+                            {% elif experiment.status == 'running' %}
+                                <span class="badge bg-warning">Обучение...</span>
+                            {% elif experiment.status == 'failed' %}
+                                <span class="badge bg-danger">Ошибка</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Ожидание</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Датасет:</strong> 
+                            <a href="{% url 'datasets:dataset_detail' experiment.dataset.pk %}">
+                                {{ experiment.dataset.name }}
+                            </a>
+                        </p>
+                        <p><strong>Целевая переменная:</strong> {{ experiment.target_column }}</p>
+                        <p><strong>Описание:</strong> {{ experiment.description|default:"Не указано" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Моделей обучено:</strong> {{ experiment.get_models_count }}</p>
+                        <p><strong>Размер тест. выборки:</strong> {{ experiment.test_size|floatformat:2 }}</p>
+                        {% if experiment.total_training_time %}
+                            <p><strong>Общее время обучения:</strong> {{ experiment.total_training_time|floatformat:2 }}с</p>
+                        {% endif %}
+                        <p><strong>Дата создания:</strong> {{ experiment.created_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                </div>
+                
+                {% if experiment.best_model %}
+                    <div class="alert alert-success mt-3">
+                        <h6><i class="bi bi-trophy"></i> Лучшая модель:</h6>
+                        <p class="mb-0">
+                            <strong>{{ experiment.best_model.get_algorithm_display }}</strong>
+                            - <a href="{% url 'datasets:model_detail' experiment.best_model.pk %}">Посмотреть детали</a>
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Сравнительная таблица моделей -->
+{% if models %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Сравнение моделей</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Алгоритм</th>
+                                <th>Время обучения (с)</th>
+                                {% if models.0.accuracy %}
+                                    <th>Accuracy</th>
+                                    <th>F1 Score</th>
+                                {% else %}
+                                    <th>R² Score</th>
+                                    <th>RMSE</th>
+                                    <th>MSE</th>
+                                {% endif %}
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model in models %}
+                                <tr {% if model == experiment.best_model %}class="table-success"{% endif %}>
+                                    <td>
+                                        <strong>{{ model.get_algorithm_display }}</strong>
+                                        {% if model == experiment.best_model %}
+                                            <span class="badge bg-warning text-dark ms-2">Лучшая</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ model.training_time|floatformat:3 }}</td>
+                                    {% if model.accuracy %}
+                                        <td>{{ model.accuracy|floatformat:4 }}</td>
+                                        <td>{{ model.f1_score|floatformat:4 }}</td>
+                                    {% else %}
+                                        <td>{{ model.r2_score|floatformat:4 }}</td>
+                                        <td>{{ model.rmse|floatformat:4 }}</td>
+                                        <td>{{ model.mse|floatformat:4 }}</td>
+                                    {% endif %}
+                                    <td>
+                                        <a href="{% url 'datasets:model_detail' model.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Графики сравнения -->
+{% if comparison_data %}
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Время обучения</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="trainingTimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    {% if comparison_data.is_classification %}Accuracy{% else %}R² Score{% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="metricsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if comparison_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Данные из Django
+const comparisonData = {{ comparison_data|safe }};
+
+// График времени обучения
+const trainingTimeCtx = document.getElementById('trainingTimeChart').getContext('2d');
+new Chart(trainingTimeCtx, {
+    type: 'bar',
+    data: {
+        labels: comparisonData.labels,
+        datasets: [{
+            label: 'Время обучения (сек)',
+            data: comparisonData.training_times,
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// График метрик
+const metricsCtx = document.getElementById('metricsChart').getContext('2d');
+const metricsData = comparisonData.is_classification ? comparisonData.accuracy : comparisonData.r2_score;
+const metricsLabel = comparisonData.is_classification ? 'Accuracy' : 'R² Score';
+
+new Chart(metricsCtx, {
+    type: 'bar',
+    data: {
+        labels: comparisonData.labels,
+        datasets: [{
+            label: metricsLabel,
+            data: metricsData,
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 1
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

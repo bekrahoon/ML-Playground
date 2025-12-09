@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои эксперименты - ML Playground{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up"></i> Мои эксперименты</h2>
+    <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Создать эксперимент
+    </a>
+</div>
+
+{% if experiments %}
+    <div class="row">
+        {% for experiment in experiments %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 {% if experiment.status == 'completed' %}border-success{% elif experiment.status == 'failed' %}border-danger{% elif experiment.status == 'running' %}border-warning{% endif %}">
+                    <div class="card-header {% if experiment.status == 'completed' %}bg-success{% elif experiment.status == 'failed' %}bg-danger{% elif experiment.status == 'running' %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                        <h5 class="mb-0">{{ experiment.name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            <strong>Статус:</strong>
+                            {% if experiment.status == 'completed' %}
+                                <span class="badge bg-success">Завершено</span>
+                            {% elif experiment.status == 'running' %}
+                                <span class="badge bg-warning">Обучение...</span>
+                            {% elif experiment.status == 'failed' %}
+                                <span class="badge bg-danger">Ошибка</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Ожидание</span>
+                            {% endif %}
+                        </p>
+                        
+                        <p class="mb-2">
+                            <strong>Датасет:</strong> {{ experiment.dataset.name }}
+                        </p>
+                        
+                        <p class="mb-2">
+                            <strong>Моделей обучено:</strong> {{ experiment.get_models_count }}
+                        </p>
+                        
+                        {% if experiment.best_model %}
+                            <p class="mb-2">
+                                <strong>Лучшая модель:</strong>
+                                <span class="badge bg-primary">{{ experiment.get_best_algorithm }}</span>
+                            </p>
+                        {% endif %}
+                        
+                        {% if experiment.total_training_time %}
+                            <p class="mb-2 small text-muted">
+                                <i class="bi bi-clock"></i> Время: {{ experiment.total_training_time|floatformat:2 }}с
+                            </p>
+                        {% endif %}
+                        
+                        <p class="card-text small text-muted mt-3">
+                            <i class="bi bi-calendar"></i> {{ experiment.created_at|date:"d.m.Y H:i" }}
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'datasets:experiment_detail' experiment.pk %}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-eye"></i> Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-graph-up display-1 text-muted"></i>
+        <p class="lead text-muted mt-3">У вас пока нет экспериментов</p>
+        <p class="text-muted">Создайте эксперимент, чтобы сравнить несколько ML моделей</p>
+        <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary mt-3">
+            <i class="bi bi-plus-circle"></i> Создать первый эксперимент
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
