@@ -146,7 +146,7 @@ def experiment_delete(request, pk):
         dataset_pk = experiment.dataset.pk
         experiment.delete()
         messages.success(request, 'Эксперимент успешно удален!')
-        return redirect('datasets:dataset_detail', pk=dataset_pk)
+        return redirect('datasets:experiment_list')
     
     return render(request, 'datasets/experiment_confirm_delete.html', {
         'experiment': experiment

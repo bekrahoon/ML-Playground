@@ -15,20 +15,6 @@
     </div>
 </div>
 
-<!-- Информационный баннер для новых пользователей -->
-{% if datasets|length == 0 or datasets|length == 1 %}
-<div class="alert alert-info alert-dismissible fade show" role="alert">
-    <h5 class="alert-heading"><i class="bi bi-lightbulb"></i> Как использовать ML Playground?</h5>
-    <p class="mb-2">После загрузки датасета вы можете:</p>
-    <ul class="mb-0">
-        <li><strong>AutoML</strong> - автоматически подберет лучшую модель с оптимальными параметрами</li>
-        <li><strong>Эксперимент</strong> - сравнит несколько моделей и покажет метрики</li>
-        <li><strong>Модель</strong> - обучит одну модель с выбранным алгоритмом</li>
-    </ul>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endif %}
-
 {% if datasets %}
     <div class="row">
         {% for dataset in datasets %}
@@ -63,18 +49,22 @@
                     </div>
                     <div class="card-footer bg-transparent">
                         <div class="d-grid gap-2">
-                            <a href="{% url 'datasets:dataset_detail' dataset.pk %}" class="btn btn-sm btn-outline-primary">
+                            <!-- Просмотр -->
+                            <a href="{% url 'datasets:dataset_detail' dataset.pk %}" 
+                               class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye"></i> Просмотр
                             </a>
                             
+                            <!-- Обучить (dropdown) -->
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" 
+                                        data-bs-toggle="dropdown">
                                     <i class="bi bi-robot"></i> Обучить
                                 </button>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu w-100">
                                     <li>
                                         <a class="dropdown-item" href="{% url 'datasets:automl_create' dataset.pk %}">
-                                            <i class="bi bi-robot text-primary"></i> AutoML
+                                            <i class="bi bi-robot text-primary"></i> <strong>AutoML</strong>
                                             <span class="badge bg-success ms-2">Рекомендуется</span>
                                             <div class="small text-muted">Автоматический подбор</div>
                                         </a>
@@ -94,6 +84,61 @@
                                     </li>
                                 </ul>
                             </div>
+                            
+                            <!-- Изменить и Удалить -->
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'datasets:dataset_update' dataset.pk %}" 
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Изменить
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteDatasetModal{{ dataset.pk }}">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal для удаления датасета -->
+            <div class="modal fade" id="deleteDatasetModal{{ dataset.pk }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-exclamation-triangle"></i> Подтверждение удаления
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Вы уверены, что хотите удалить датасет?</p>
+                            <div class="alert alert-light border">
+                                <strong>{{ dataset.name }}</strong><br>
+                                <small class="text-muted">{{ dataset.rows_count }} строк, {{ dataset.columns_count }} колонок</small>
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Внимание!</strong> Это действие нельзя отменить.<br>
+                                Также будут удалены:
+                                <ul class="mb-0 mt-2">
+                                    <li>Все обученные модели на этом датасете</li>
+                                    <li>Все эксперименты с этим датасетом</li>
+                                    <li>Файл датасета (CSV)</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Отмена
+                            </button>
+                            <form method="post" action="{% url 'datasets:dataset_delete' dataset.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Да, удалить датасет
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -104,10 +149,15 @@
     <div class="text-center py-5">
         <i class="bi bi-database display-1 text-muted"></i>
         <p class="lead text-muted mt-3">У вас пока нет датасетов</p>
-        <p class="text-muted">Загрузите CSV файл, чтобы начать работу с ML моделями</p>
-        <a href="{% url 'datasets:dataset_create' %}" class="btn btn-primary mt-3">
-            <i class="bi bi-plus-circle"></i> Загрузить первый датасет
-        </a>
+        <p class="text-muted">Загрузите CSV файл или импортируйте из библиотеки</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+            <a href="{% url 'datasets:dataset_library' %}" class="btn btn-info">
+                <i class="bi bi-book"></i> Библиотека датасетов
+            </a>
+            <a href="{% url 'datasets:dataset_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Загрузить первый датасет
+            </a>
+        </div>
     </div>
 {% endif %}
 {% endblock %}

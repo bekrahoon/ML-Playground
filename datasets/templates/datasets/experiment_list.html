@@ -5,8 +5,8 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-graph-up"></i> Мои эксперименты</h2>
-    <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Создать эксперимент
+    <a href="{% url 'datasets:dataset_list' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> К датасетам
     </a>
 </div>
 
@@ -14,12 +14,19 @@
     <div class="row">
         {% for experiment in experiments %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 {% if experiment.status == 'completed' %}border-success{% elif experiment.status == 'failed' %}border-danger{% elif experiment.status == 'running' %}border-warning{% endif %}">
-                    <div class="card-header {% if experiment.status == 'completed' %}bg-success{% elif experiment.status == 'failed' %}bg-danger{% elif experiment.status == 'running' %}bg-warning{% else %}bg-secondary{% endif %} text-white">
-                        <h5 class="mb-0">{{ experiment.name }}</h5>
+                <div class="card h-100">
+                    <div class="card-header {% if experiment.experiment_type == 'automl' %}bg-primary{% else %}bg-warning{% endif %} text-white">
+                        <h5 class="mb-0">{{ experiment.name|truncatechars:40 }}</h5>
+                        <small>
+                            {% if experiment.experiment_type == 'automl' %}
+                                <i class="bi bi-robot"></i> AutoML
+                            {% else %}
+                                <i class="bi bi-sliders"></i> Ручное сравнение
+                            {% endif %}
+                        </small>
                     </div>
                     <div class="card-body">
-                        <p class="mb-2">
+                        <div class="mb-2">
                             <strong>Статус:</strong>
                             {% if experiment.status == 'completed' %}
                                 <span class="badge bg-success">Завершено</span>
@@ -30,37 +37,107 @@
                             {% else %}
                                 <span class="badge bg-secondary">Ожидание</span>
                             {% endif %}
-                        </p>
+                        </div>
                         
-                        <p class="mb-2">
-                            <strong>Датасет:</strong> {{ experiment.dataset.name }}
-                        </p>
+                        <div class="mb-2">
+                            <strong>Датасет:</strong>
+                            <a href="{% url 'datasets:dataset_detail' experiment.dataset.pk %}">
+                                {{ experiment.dataset.name }}
+                            </a>
+                        </div>
                         
-                        <p class="mb-2">
-                            <strong>Моделей обучено:</strong> {{ experiment.get_models_count }}
-                        </p>
+                        <div class="mb-2">
+                            <strong>Моделей обучено:</strong>
+                            <span class="badge bg-info">{{ experiment.get_models_count }}</span>
+                        </div>
                         
                         {% if experiment.best_model %}
-                            <p class="mb-2">
+                            <div class="mb-2">
                                 <strong>Лучшая модель:</strong>
-                                <span class="badge bg-primary">{{ experiment.get_best_algorithm }}</span>
-                            </p>
+                                <span class="badge bg-success">
+                                    {{ experiment.get_best_algorithm }}
+                                </span>
+                            </div>
                         {% endif %}
                         
                         {% if experiment.total_training_time %}
-                            <p class="mb-2 small text-muted">
-                                <i class="bi bi-clock"></i> Время: {{ experiment.total_training_time|floatformat:2 }}с
-                            </p>
+                            <div class="mb-2">
+                                <strong>Время обучения:</strong>
+                                {{ experiment.total_training_time|floatformat:2 }}с
+                            </div>
                         {% endif %}
                         
-                        <p class="card-text small text-muted mt-3">
+                        <hr>
+                        
+                        <p class="card-text small text-muted mb-0">
                             <i class="bi bi-calendar"></i> {{ experiment.created_at|date:"d.m.Y H:i" }}
                         </p>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <a href="{% url 'datasets:experiment_detail' experiment.pk %}" class="btn btn-sm btn-outline-primary w-100">
-                            <i class="bi bi-eye"></i> Подробнее
-                        </a>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'datasets:experiment_detail' experiment.pk %}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i> Подробнее
+                            </a>
+                            
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteExpModal{{ experiment.pk }}">
+                                <i class="bi bi-trash"></i> Удалить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal для удаления эксперимента -->
+            <div class="modal fade" id="deleteExpModal{{ experiment.pk }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-exclamation-triangle"></i> Подтверждение удаления
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Вы уверены, что хотите удалить эксперимент?</p>
+                            <div class="alert alert-light border">
+                                <strong>{{ experiment.name }}</strong><br>
+                                <small class="text-muted">
+                                    Тип: {% if experiment.experiment_type == 'automl' %}
+                                        <span class="badge bg-primary">AutoML</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Ручное сравнение</span>
+                                    {% endif %}
+                                </small><br>
+                                <small class="text-muted">Датасет: {{ experiment.dataset.name }}</small>
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Внимание!</strong> Это действие нельзя отменить.<br>
+                                Также будут удалены:
+                                <ul class="mb-0 mt-2">
+                                    <li>Все модели эксперимента ({{ experiment.get_models_count }} шт.)</li>
+                                    <li>Файлы всех моделей (.pkl)</li>
+                                    <li>Результаты и метрики</li>
+                                    {% if experiment.recommendations %}
+                                        <li>Рекомендации AutoML</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Отмена
+                            </button>
+                            <form method="post" action="{% url 'datasets:experiment_delete' experiment.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Да, удалить эксперимент
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -70,9 +147,9 @@
     <div class="text-center py-5">
         <i class="bi bi-graph-up display-1 text-muted"></i>
         <p class="lead text-muted mt-3">У вас пока нет экспериментов</p>
-        <p class="text-muted">Создайте эксперимент, чтобы сравнить несколько ML моделей</p>
+        <p class="text-muted">Создайте эксперимент для сравнения ML моделей</p>
         <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary mt-3">
-            <i class="bi bi-plus-circle"></i> Создать первый эксперимент
+            <i class="bi bi-database"></i> Перейти к датасетам
         </a>
     </div>
 {% endif %}
