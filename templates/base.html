@@ -110,12 +110,18 @@
                                 <i class="bi bi-graph-up"></i> Эксперименты
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'collaboration:home' %}">
+                                <i class="bi bi-people"></i> Сообщество
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-person-circle"></i> {{ user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Профиль</a></li>
+                                <li><a class="dropdown-item" href="{% url 'collaboration:my_publications' %}">Мои публикации</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="post" action="{% url 'accounts:logout' %}">
@@ -126,6 +132,11 @@
                             </ul>
                         </li>
                     {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'collaboration:home' %}">
+                                <i class="bi bi-people"></i> Сообщество
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'accounts:login' %}">Вход</a>
                         </li>
@@ -160,7 +171,7 @@
     <!-- Footer -->
     <footer>
         <div class="container text-center">
-            <p class="mb-0">&copy; 2025 ML Playground. Создано с Django и scikit-learn.</p>
+            <p class="mb-0">&copy; 2024 ML Playground. Создано с Django и scikit-learn.</p>
         </div>
     </footer>
     
