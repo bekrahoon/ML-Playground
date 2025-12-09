@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Модели сообщества - ML Playground{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cpu"></i> Модели сообщества</h2>
+    <a href="{% url 'collaboration:home' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> Назад
+    </a>
+</div>
+
+<!-- Поиск и фильтры -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-5">
+                <input type="text" name="q" class="form-control" 
+                       placeholder="Поиск по названию, описанию, тегам..."
+                       value="{{ search_query }}">
+            </div>
+            <div class="col-md-3">
+                <select name="sort" class="form-select">
+                    <option value="recent" {% if current_sort == 'recent' %}selected{% endif %}>Новые</option>
+                    <option value="popular" {% if current_sort == 'popular' %}selected{% endif %}>Популярные</option>
+                    <option value="downloads" {% if current_sort == 'downloads' %}selected{% endif %}>Скачиваемые</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Найти
+                    </button>
+                    <a href="{% url 'collaboration:model_list' %}" class="btn btn-outline-secondary">
+                        Сбросить
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Популярные теги -->
+{% if all_tags %}
+<div class="mb-4">
+    <h6>Популярные теги:</h6>
+    <div class="d-flex flex-wrap gap-2">
+        {% for tag in all_tags|slice:":15" %}
+            <a href="?tag={{ tag }}" 
+               class="badge {% if tag == current_tag %}bg-primary{% else %}bg-secondary{% endif %}">
+                {{ tag }}
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Список моделей -->
+{% if models %}
+    <div class="row">
+        {% for model in models %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">{{ model.title|truncatechars:45 }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text small">{{ model.description|truncatewords:20 }}</p>
+                        
+                        <div class="mb-2">
+                            <strong>Алгоритм:</strong>
+                            <span class="badge bg-info">
+                                {{ model.original_model.get_algorithm_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>Датасет:</strong>
+                            <small>{{ model.original_model.dataset.name|truncatechars:30 }}</small>
+                        </div>
+                        
+                        {% if model.original_model.accuracy %}
+                            <div class="mb-2">
+                                <strong>Accuracy:</strong>
+                                <span class="badge bg-success">
+                                    {{ model.original_model.accuracy|floatformat:4 }}
+                                </span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if model.original_model.r2_score %}
+                            <div class="mb-2">
+                                <strong>R² Score:</strong>
+                                <span class="badge bg-success">
+                                    {{ model.original_model.r2_score|floatformat:4 }}
+                                </span>
+                            </div>
+                        {% endif %}
+                        
+                        <hr>
+                        
+                        <div class="mb-2">
+                            <small>
+                                <i class="bi bi-person"></i> {{ model.author.username }}
+                            </small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span><i class="bi bi-heart"></i> {{ model.likes_count }}</span>
+                            <span><i class="bi bi-eye"></i> {{ model.views_count }}</span>
+                            <span><i class="bi bi-download"></i> {{ model.downloads_count }}</span>
+                        </div>
+                        
+                        <div class="mt-2">
+                            {% for tag in model.get_tags_list|slice:":3" %}
+                                <span class="badge bg-light text-dark">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'collaboration:model_detail' model.pk %}" 
+                           class="btn btn-sm btn-primary w-100">
+                            <i class="bi bi-eye"></i> Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-search display-1 text-muted"></i>
+        <p class="lead text-muted mt-3">Моделей не найдено</p>
+        {% if search_query or current_tag %}
+            <p class="text-muted">Попробуйте изменить параметры поиска</p>
+            <a href="{% url 'collaboration:model_list' %}" class="btn btn-outline-primary">
+                Показать все модели
+            </a>
+        {% else %}
+            <p class="text-muted">Пока никто не опубликовал модели</p>
+            <a href="{% url 'datasets:model_list' %}" class="btn btn-primary">
+                Опубликовать первую модель
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}
