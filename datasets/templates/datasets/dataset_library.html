@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Библиотека датасетов - ML Playground{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="bi bi-book"></i> Библиотека датасетов</h2>
+    <p class="text-muted">Готовые датасеты для быстрого старта и обучения</p>
+</div>
+
+<!-- Hero баннер -->
+<div class="alert alert-primary" role="alert">
+    <h5 class="alert-heading"><i class="bi bi-lightbulb"></i> Зачем нужна библиотека?</h5>
+    <p class="mb-0">
+        Используйте готовые датасеты для изучения ML без необходимости искать и подготавливать данные.
+        Все датасеты готовы к использованию - просто нажмите "Импортировать"!
+    </p>
+</div>
+
+<!-- Датасеты для начинающих -->
+<h4 class="mt-5 mb-3">
+    <span class="badge bg-success">Для начинающих</span>
+</h4>
+
+<div class="row">
+    {% for dataset_id, dataset in beginner_datasets.items %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-{{ dataset.icon }}"></i> {{ dataset.name }}
+                    </h5>
+                    <small>{{ dataset.task_type|title }}</small>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ dataset.description }}</p>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-table"></i> <strong>{{ dataset.rows }}</strong> строк</span>
+                            <span><i class="bi bi-layout-three-columns"></i> <strong>{{ dataset.columns }}</strong> колонок</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Целевая переменная:</strong> 
+                        <code>{{ dataset.target }}</code>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Рекомендуемые алгоритмы:</strong>
+                        <div class="mt-1">
+                            {% for algo in dataset.recommended_algorithms %}
+                                <span class="badge bg-secondary">{{ algo }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Примеры использования:</strong>
+                        <ul class="small mb-0">
+                            {% for use_case in dataset.use_cases %}
+                                <li>{{ use_case }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-2">
+                        {% for tag in dataset.tags %}
+                            <span class="badge bg-light text-dark">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <form method="post" action="{% url 'datasets:import_dataset' dataset_id %}" class="d-grid">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-download"></i> Импортировать
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Датасеты среднего уровня -->
+<h4 class="mt-5 mb-3">
+    <span class="badge bg-warning text-dark">Средний уровень</span>
+</h4>
+
+<div class="row">
+    {% for dataset_id, dataset in intermediate_datasets.items %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-{{ dataset.icon }}"></i> {{ dataset.name }}
+                    </h5>
+                    <small>{{ dataset.task_type|title }}</small>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ dataset.description }}</p>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-table"></i> <strong>{{ dataset.rows }}</strong> строк</span>
+                            <span><i class="bi bi-layout-three-columns"></i> <strong>{{ dataset.columns }}</strong> колонок</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Целевая переменная:</strong> 
+                        <code>{{ dataset.target }}</code>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Рекомендуемые алгоритмы:</strong>
+                        <div class="mt-1">
+                            {% for algo in dataset.recommended_algorithms %}
+                                <span class="badge bg-secondary">{{ algo }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Примеры использования:</strong>
+                        <ul class="small mb-0">
+                            {% for use_case in dataset.use_cases %}
+                                <li>{{ use_case }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-2">
+                        {% for tag in dataset.tags %}
+                            <span class="badge bg-light text-dark">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <form method="post" action="{% url 'datasets:import_dataset' dataset_id %}" class="d-grid">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-download"></i> Импортировать
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Информационный блок -->
+<div class="card mt-5">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Как использовать библиотеку?</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6>1. Выберите датасет</h6>
+                <p class="small">Изучите описание, размер и тип задачи</p>
+            </div>
+            <div class="col-md-4">
+                <h6>2. Импортируйте</h6>
+                <p class="small">Нажмите "Импортировать" - датасет добавится в ваши датасеты</p>
+            </div>
+            <div class="col-md-4">
+                <h6>3. Обучайте модели</h6>
+                <p class="small">Используйте AutoML или создайте эксперимент</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрые ссылки -->
+<div class="text-center mt-4 mb-5">
+    <a href="{% url 'datasets:dataset_list' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> Вернуться к моим датасетам
+    </a>
+</div>
+{% endblock %}
