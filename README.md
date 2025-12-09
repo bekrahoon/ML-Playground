@@ -1,7 +1,4 @@
 ```bash
-git add collaboration/
-git commit -m "Add Collaboration Hub app - models, views, forms"
-
 python manage.py makemigrations
 python manage.py migrate
 git add */migrations/*.py
