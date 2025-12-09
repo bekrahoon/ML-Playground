@@ -6,33 +6,64 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+from openpyxl.cell.cell import MergedCell
+
+# Регистрация шрифтов с поддержкой кириллицы
+try:
+    # Попытка зарегистрировать DejaVu Sans (обычно есть в Linux)
+    pdfmetrics.registerFont(TTFont('DejaVuSans', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
+    pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'))
+    FONT_NAME = 'DejaVuSans'
+    FONT_NAME_BOLD = 'DejaVuSans-Bold'
+except:
+    # Если DejaVu не найден, используем стандартные (без кириллицы)
+    FONT_NAME = 'Helvetica'
+    FONT_NAME_BOLD = 'Helvetica-Bold'
 
 
 def generate_pdf_report(ml_model):
-    """Генерация PDF отчета о модели"""
+    """Генерация PDF отчета о модели с поддержкой кириллицы"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
     styles = getSampleStyleSheet()
     
-    # Заголовок
+    # Настройка стилей с кириллическими шрифтами
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
         fontSize=24,
         textColor=colors.HexColor('#2C3E50'),
         spaceAfter=30,
-        alignment=TA_CENTER
+        alignment=TA_CENTER,
+        fontName=FONT_NAME_BOLD
     )
     
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontName=FONT_NAME_BOLD,
+        fontSize=14
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontName=FONT_NAME,
+        fontSize=10
+    )
+    
+    # Заголовок
     title = Paragraph(f'ML Model Report: {ml_model.name}', title_style)
     elements.append(title)
     elements.append(Spacer(1, 0.2*inch))
     
     # Информация о модели
-    info_style = styles['Normal']
     info_data = [
         ['Параметр', 'Значение'],
         ['Название модели', ml_model.name],
@@ -47,8 +78,10 @@ def generate_pdf_report(ml_model):
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498DB')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), FONT_NAME_BOLD),
+        ('FONTNAME', (0, 1), (-1, -1), FONT_NAME),
         ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
@@ -58,7 +91,7 @@ def generate_pdf_report(ml_model):
     elements.append(Spacer(1, 0.3*inch))
     
     # Метрики
-    metrics_title = Paragraph('<b>Метрики модели</b>', styles['Heading2'])
+    metrics_title = Paragraph('<b>Метрики модели</b>', heading_style)
     elements.append(metrics_title)
     elements.append(Spacer(1, 0.1*inch))
     
@@ -80,8 +113,10 @@ def generate_pdf_report(ml_model):
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2ECC71')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), FONT_NAME_BOLD),
+        ('FONTNAME', (0, 1), (-1, -1), FONT_NAME),
         ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
@@ -92,7 +127,7 @@ def generate_pdf_report(ml_model):
     # Confusion Matrix (если есть)
     if ml_model.confusion_matrix:
         elements.append(Spacer(1, 0.3*inch))
-        cm_title = Paragraph('<b>Confusion Matrix</b>', styles['Heading2'])
+        cm_title = Paragraph('<b>Confusion Matrix</b>', heading_style)
         elements.append(cm_title)
         elements.append(Spacer(1, 0.1*inch))
         
@@ -108,7 +143,8 @@ def generate_pdf_report(ml_model):
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('TEXTCOLOR', (0, 1), (0, -1), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 0), (-1, 0), FONT_NAME_BOLD),
+            ('FONTNAME', (0, 1), (-1, -1), FONT_NAME),
             ('FONTSIZE', (0, 0), (-1, -1), 11),
             ('GRID', (0, 0), (-1, -1), 1, colors.black)
         ]))
@@ -118,10 +154,10 @@ def generate_pdf_report(ml_model):
     # Описание
     if ml_model.description:
         elements.append(Spacer(1, 0.3*inch))
-        desc_title = Paragraph('<b>Описание</b>', styles['Heading2'])
+        desc_title = Paragraph('<b>Описание</b>', heading_style)
         elements.append(desc_title)
         elements.append(Spacer(1, 0.1*inch))
-        desc = Paragraph(ml_model.description, styles['Normal'])
+        desc = Paragraph(ml_model.description, normal_style)
         elements.append(desc)
     
     # Генерация PDF
@@ -216,17 +252,28 @@ def generate_excel_report(ml_model):
         ws[f'C{row}'] = cm[1][1]
     
     # Автоширина колонок
-    for column in ws.columns:
+    for column_cells in ws.columns:
         max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
+        column_letter = None
+        
+        for cell in column_cells:
+            if isinstance(cell, MergedCell):
+                continue
+                
+            if column_letter is None:
+                column_letter = get_column_letter(cell.column)
+            
             try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
+                if cell.value:
+                    cell_length = len(str(cell.value))
+                    if cell_length > max_length:
+                        max_length = cell_length
             except:
                 pass
-        adjusted_width = min(max_length + 2, 50)
-        ws.column_dimensions[column_letter].width = adjusted_width
+        
+        if column_letter and max_length > 0:
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
     
     # Сохранение в буфер
     buffer = io.BytesIO()
