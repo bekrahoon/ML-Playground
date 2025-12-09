@@ -41,7 +41,7 @@
                     <div class="col-md-6">
                         <p><strong>Дата создания:</strong> {{ model.created_at|date:"d.m.Y H:i" }}</p>
                         <p><strong>Владелец:</strong> {{ model.owner.username }}</p>
-                        <p><strong>Файл модели:</strong> {{ model.model_file.name|basename }}</p>
+                        <p><strong>Файл модели:</strong> {{ model.model_file.name }}</p>
                     </div>
                 </div>
                 
