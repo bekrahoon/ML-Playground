@@ -8,6 +8,12 @@ from django.http import HttpResponseForbidden, JsonResponse
 from .models import Dataset, Experiment, MLModel
 from .forms import ExperimentForm
 from .experiment_utils import run_experiment, get_comparison_data
+from .automl_utils import run_automl
+import pickle
+import tempfile
+import os
+from django.core.files.base import ContentFile
+from django.utils import timezone
 
 
 @login_required
@@ -150,3 +156,131 @@ def get_columns(dataset):
         return list(df.columns)
     except Exception:
         return []
+
+
+@login_required
+def automl_create(request, dataset_pk):
+    """Создание AutoML эксперимента"""
+    dataset = get_object_or_404(Dataset, pk=dataset_pk)
+    
+    # Проверка доступа
+    if dataset.owner != request.user:
+        return HttpResponseForbidden('У вас нет доступа к этому датасету')
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        target_column = request.POST.get('target_column')
+        feature_columns = request.POST.getlist('feature_columns')
+        test_size = float(request.POST.get('test_size', 0.2))
+        cv_folds = int(request.POST.get('cv_folds', 5))
+        
+        if not name or not target_column:
+            messages.error(request, 'Заполните обязательные поля!')
+            return render(request, 'datasets/automl_form.html', {
+                'dataset': dataset,
+                'columns': get_columns(dataset)
+            })
+        
+        # Создаем эксперимент
+        experiment = Experiment(
+            name=name,
+            description=description,
+            dataset=dataset,
+            target_column=target_column,
+            feature_columns=feature_columns if feature_columns else None,
+            test_size=test_size,
+            owner=request.user,
+            experiment_type='automl',
+            status='pending',
+            automl_settings={
+                'cv_folds': cv_folds
+            }
+        )
+        experiment.save()
+        
+        # Запускаем AutoML
+        messages.info(request, '🤖 AutoML запущен! Подбираем лучшую модель...')
+        
+        automl_results = run_automl(
+            dataset.file.path,
+            target_column,
+            feature_columns if feature_columns else None,
+            test_size,
+            cv_folds
+        )
+        
+        if automl_results['success']:
+            # Сохраняем результаты
+            experiment.status = 'completed'
+            experiment.completed_at = timezone.now()
+            experiment.task_type = automl_results['task_type']
+            experiment.recommendations = automl_results['recommendations']
+            experiment.results_summary = {
+                'preprocessing': automl_results['preprocessing_info'],
+                'models_count': len(automl_results['models'])
+            }
+            
+            total_time = sum(m['training_time'] for m in automl_results['models'])
+            experiment.total_training_time = total_time
+            
+            # Сохраняем модели
+            for model_result in automl_results['models']:
+                ml_model = MLModel(
+                    name=f"{experiment.name} - {model_result['algorithm_display']}",
+                    description=f"AutoML модель. Гиперпараметры: {model_result['best_params']}",
+                    dataset=dataset,
+                    algorithm=model_result['algorithm'],
+                    target_column=target_column,
+                    feature_columns=feature_columns if feature_columns else list(model_result['model'].feature_names_in_ if hasattr(model_result['model'], 'feature_names_in_') else []),
+                    owner=request.user,
+                    experiment=experiment,
+                    training_time=model_result['training_time']
+                )
+                
+                # Метрики
+                if 'accuracy' in model_result:
+                    ml_model.accuracy = model_result['accuracy']
+                    ml_model.f1_score = model_result['f1_score']
+                if 'r2_score' in model_result:
+                    ml_model.r2_score = model_result['r2_score']
+                    ml_model.mse = model_result['mse']
+                    ml_model.rmse = model_result['rmse']
+                
+                # Сохраняем pickle файл
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
+                    pickle.dump(model_result['model'], tmp)
+                    tmp.flush()
+                    
+                    with open(tmp.name, 'rb') as f:
+                        ml_model.model_file.save(
+                            f'{ml_model.name}.pkl',
+                            ContentFile(f.read()),
+                            save=False
+                        )
+                    
+                    os.unlink(tmp.name)
+                
+                ml_model.save()
+            
+            # Определяем лучшую модель
+            best_algo = automl_results['best_model']['algorithm']
+            best_model = experiment.models.filter(algorithm=best_algo).first()
+            experiment.best_model = best_model
+            experiment.save()
+            
+            messages.success(request, 
+                f'✅ AutoML завершен! Найдена лучшая модель: {automl_results["best_model"]["algorithm_display"]}')
+            return redirect('datasets:experiment_detail', pk=experiment.pk)
+        else:
+            experiment.status = 'failed'
+            experiment.results_summary = {'error': automl_results.get('error')}
+            experiment.save()
+            
+            messages.error(request, f'Ошибка AutoML: {automl_results.get("error")}')
+            return redirect('datasets:experiment_detail', pk=experiment.pk)
+    
+    return render(request, 'datasets/automl_form.html', {
+        'dataset': dataset,
+        'columns': get_columns(dataset)
+    })
