@@ -123,3 +123,68 @@ def dataset_delete(request, pk):
         return redirect('datasets:dataset_list')
     
     return render(request, 'datasets/dataset_confirm_delete.html', {'dataset': dataset})
+
+
+@login_required
+def model_delete(request, pk):
+    """Удаление модели"""
+    model = get_object_or_404(MLModel, pk=pk)
+    
+    # Проверка доступа
+    if model.owner != request.user:
+        return HttpResponseForbidden('У вас нет доступа к этой модели')
+    
+    if request.method == 'POST':
+        model.delete()
+        messages.success(request, 'Модель успешно удалена!')
+        return redirect('datasets:model_list')
+    
+    return render(request, 'datasets/model_confirm_delete.html', {'model': model})
+
+
+# ============== EXPORT VIEWS ==============
+
+@login_required
+def export_pdf(request, pk):
+    """Экспорт модели в PDF"""
+    model = get_object_or_404(MLModel, pk=pk)
+    
+    # Проверка доступа
+    if model.owner != request.user:
+        return HttpResponseForbidden('У вас нет доступа к этой модели')
+    
+    buffer = generate_pdf_report(model)
+    
+    response = FileResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{model.name}_report.pdf"'
+    return response
+
+
+@login_required
+def export_excel(request, pk):
+    """Экспорт модели в Excel"""
+    model = get_object_or_404(MLModel, pk=pk)
+    
+    # Проверка доступа
+    if model.owner != request.user:
+        return HttpResponseForbidden('У вас нет доступа к этой модели')
+    
+    buffer = generate_excel_report(model)
+    
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{model.name}_report.xlsx"'
+    return response
+
+
+# ============== HELPER FUNCTIONS ==============
+
+def get_columns(dataset):
+    """Получение списка колонок датасета"""
+    try:
+        df = pd.read_csv(dataset.file.path)
+        return list(df.columns)
+    except Exception:
+        return []

@@ -6,7 +6,6 @@ from .forms import RegisterForm, LoginForm
 
 
 def register_view(request):
-    """Регистрация нового пользователя"""
     if request.user.is_authenticated:
         return redirect('home')
     
@@ -24,7 +23,6 @@ def register_view(request):
 
 
 def login_view(request):
-    """Вход пользователя в систему"""
     if request.user.is_authenticated:
         return redirect('home')
     
@@ -46,7 +44,6 @@ def login_view(request):
 
 @login_required
 def logout_view(request):
-    """Выход пользователя из системы"""
     logout(request)
     messages.info(request, 'Вы вышли из системы')
     return redirect('home')
@@ -54,5 +51,4 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    """Профиль пользователя"""
     return render(request, 'accounts/profile.html')
