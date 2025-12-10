@@ -16,6 +16,10 @@
             <a href="{% url 'collaboration:model_list' %}" class="btn btn-light btn-lg">
                 <i class="bi bi-search"></i> Обзор моделей
             </a>
+            <a href="{% url 'collaboration:leaderboard' %}" class="btn btn-warning btn-lg">
+                <i class="bi bi-trophy"></i> Таблица лидеров
+            </a>
+
             {% if user.is_authenticated %}
                 <a href="{% url 'datasets:model_list' %}" class="btn btn-outline-light btn-lg">
                     <i class="bi bi-upload"></i> Опубликовать модель
