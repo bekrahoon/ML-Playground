@@ -1,101 +1,46 @@
 {% extends 'base.html' %}
 
-{% block title %}Таблица лидеров - ML Playground{% endblock %}
+{% block title %}Подтверждение - ML Playground{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="bi bi-trophy"></i> Таблица лидеров</h2>
-
-<div class="row">
-    <div class="col-md-6 mb-4">
+<div class="row justify-content-center">
+    <div class="col-md-6">
         <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-trophy"></i> Топ авторы</h5>
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Подтверждение
+                </h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Автор</th>
-                                <th>Моделей</th>
-                                <th>Лайков</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for author in top_authors %}
-                                <tr>
-                                    <td>
-                                        {% if forloop.counter == 1 %}
-                                            <i class="bi bi-trophy-fill text-warning"></i>
-                                        {% elif forloop.counter == 2 %}
-                                            <i class="bi bi-trophy-fill text-secondary"></i>
-                                        {% elif forloop.counter == 3 %}
-                                            <i class="bi bi-trophy-fill" style="color: #cd7f32;"></i>
-                                        {% else %}
-                                            {{ forloop.counter }}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <i class="bi bi-person-circle"></i> 
-                                        {{ author.author__username }}
-                                    </td>
-                                    <td>{{ author.total_models }}</td>
-                                    <td>
-                                        <i class="bi bi-heart-fill text-danger"></i> 
-                                        {{ author.total_likes }}
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">
-                                        Пока нет данных
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <p>Вы уверены, что хотите снять модель с публикации?</p>
+                <div class="alert alert-light border">
+                    <strong>{{ public_model.title }}</strong><br>
+                    <small class="text-muted">
+                        Алгоритм: {{ public_model.original_model.get_algorithm_display }}
+                    </small>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Внимание!</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Модель исчезнет из сообщества</li>
+                        <li>Все лайки ({{ public_model.likes_count }}) и комментарии будут удалены</li>
+                        <li>Оригинальная модель останется у вас в "Мои модели"</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-star"></i> Топ модели</h5>
-            </div>
-            <div class="card-body">
-                <div class="list-group list-group-flush">
-                    {% for model in top_models %}
-                        <a href="{% url 'collaboration:model_detail' model.pk %}" 
-                           class="list-group-item list-group-item-action">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <div class="d-flex align-items-center gap-2">
-                                        {% if forloop.counter <= 3 %}
-                                            <span class="badge bg-warning">{{ forloop.counter }}</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ forloop.counter }}</span>
-                                        {% endif %}
-                                        <h6 class="mb-1">{{ model.title|truncatechars:35 }}</h6>
-                                    </div>
-                                    <small class="text-muted">
-                                        <i class="bi bi-person"></i> {{ model.author.username }}
-                                    </small>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge bg-danger">
-                                        <i class="bi bi-heart-fill"></i> {{ model.likes_count }}
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    {% empty %}
-                        <div class="list-group-item text-center text-muted">
-                            Пока нет моделей
-                        </div>
-                    {% endfor %}
+            <div class="card-footer">
+                <div class="d-flex gap-2">
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Да, снять с публикации
+                        </button>
+                    </form>
+                    <a href="{% url 'collaboration:model_detail' public_model.pk %}" 
+                       class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Отмена
+                    </a>
                 </div>
             </div>
         </div>
