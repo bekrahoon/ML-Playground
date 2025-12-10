@@ -10,6 +10,8 @@ import pickle
 import tempfile
 import os
 from django.core.files.base import ContentFile
+from django.db import models
+
 
 
 def community_home(request):
@@ -288,6 +290,160 @@ def fork_model(request, pk):
         # Увеличиваем счетчик форков
         public_model.forks_count += 1
         public_model.save(update_fields=['forks_count'])
+        
+        messages.success(request, f'✅ Модель "{public_model.title}" успешно скопирована!')
+        return redirect('datasets:model_detail', pk=new_model.pk)
+        
+    except Exception as e:
+        messages.error(request, f'Ошибка при форке модели: {str(e)}')
+        return redirect('collaboration:model_detail', pk=pk)
+
+
+@login_required
+def unpublish_model(request, pk):
+    """Снять модель с публикации"""
+    public_model = get_object_or_404(PublicModel, pk=pk)
+    
+    # Проверка доступа
+    if public_model.author != request.user:
+        return HttpResponseForbidden('У вас нет доступа')
+    
+    if request.method == 'POST':
+        model_title = public_model.title
+        public_model.delete()
+        messages.success(request, f'Модель "{model_title}" снята с публикации')
+        return redirect('collaboration:my_publications')
+    
+    return render(request, 'collaboration/unpublish_confirm.html', {
+        'public_model': public_model
+    })
+
+
+@login_required
+def my_publications(request):
+    """Мои опубликованные модели"""
+    my_models = PublicModel.objects.filter(author=request.user)
+    
+    return render(request, 'collaboration/my_publications.html', {
+        'my_models': my_models
+    })
+
+
+def leaderboard(request):
+    """Таблица лидеров"""
+    # Топ авторов по лайкам
+    top_authors = PublicModel.objects.filter(
+        visibility='public'
+    ).values('author__username', 'author__id').annotate(
+        total_likes=Count('likes'),
+        total_models=Count('id'),
+        total_views=models.Sum('views_count')
+    ).order_by('-total_likes')[:20]
+    
+    # Топ модели
+    top_models = PublicModel.objects.filter(
+        visibility='public'
+    ).order_by('-likes_count')[:10]
+    
+    return render(request, 'collaboration/leaderboard.html', {
+        'top_authors': top_authors,
+        'top_models': top_models
+    })
+
+@login_required
+def add_comment(request, pk):
+    """Добавить комментарий"""
+    if request.method != 'POST':
+        return redirect('collaboration:model_detail', pk=pk)
+    
+    public_model = get_object_or_404(PublicModel, pk=pk)
+    form = CommentForm(request.POST)
+    
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.public_model = public_model
+        comment.author = request.user
+        
+        # Проверка на вложенный комментарий
+        parent_id = request.POST.get('parent_id')
+        if parent_id:
+            comment.parent = get_object_or_404(ModelComment, pk=parent_id)
+        
+        comment.save()
+        messages.success(request, 'Комментарий добавлен')
+    
+    return redirect('collaboration:model_detail', pk=pk)
+
+
+@login_required
+def fork_model(request, pk):
+    """Форк модели (скопировать себе)"""
+    public_model = get_object_or_404(PublicModel, pk=pk)
+    
+    # Проверка - уже есть форк?
+    existing_fork = ModelFork.objects.filter(
+        original_public_model=public_model,
+        user=request.user
+    ).first()
+    
+    if existing_fork:
+        messages.info(request, 'Вы уже сделали форк этой модели')
+        return redirect('datasets:model_detail', pk=existing_fork.forked_model.pk)
+    
+    try:
+        original = public_model.original_model
+        
+        # Загружаем pickle модели
+        with original.model_file.open('rb') as f:
+            model_obj = pickle.load(f)
+        
+        # Создаем новую модель
+        new_model = MLModel(
+            name=f'{public_model.title} (fork)',
+            description=f'Форк модели от {public_model.author.username}. {public_model.description}',
+            dataset=original.dataset,
+            algorithm=original.algorithm,
+            target_column=original.target_column,
+            feature_columns=original.feature_columns,
+            owner=request.user,
+            
+            # Копируем метрики
+            accuracy=original.accuracy,
+            f1_score=original.f1_score,
+            mse=original.mse,
+            rmse=original.rmse,
+            r2_score=original.r2_score,
+            confusion_matrix=original.confusion_matrix,
+            training_time=original.training_time,
+        )
+        
+        # Сохраняем pickle файл
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
+            pickle.dump(model_obj, tmp)
+            tmp.flush()
+            
+            with open(tmp.name, 'rb') as f:
+                new_model.model_file.save(
+                    f'{new_model.name}.pkl',
+                    ContentFile(f.read()),
+                    save=False
+                )
+            
+            os.unlink(tmp.name)
+        
+        new_model.save()
+        
+        # Создаем запись о форке
+        fork = ModelFork.objects.create(
+            original_public_model=public_model,
+            forked_model=new_model,
+            user=request.user
+        )
+        
+        # Увеличиваем счетчик форков
+        public_model.forks_count += 1
+        public_model.downloads_count += 1
+        public_model.save()
         
         messages.success(request, f'✅ Модель "{public_model.title}" успешно скопирована!')
         return redirect('datasets:model_detail', pk=new_model.pk)
