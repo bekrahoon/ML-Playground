@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои публикации - ML Playground{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-folder"></i> Мои публикации</h2>
+
+{% if my_models %}
+    <div class="row">
+        {% for model in my_models %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="mb-0">{{ model.title|truncatechars:40 }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <span class="badge {% if model.visibility == 'public' %}bg-success{% elif model.visibility == 'unlisted' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ model.get_visibility_display }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mb-2">
+                            <span><i class="bi bi-heart"></i> {{ model.likes_count }}</span>
+                            <span><i class="bi bi-eye"></i> {{ model.views_count }}</span>
+                            <span><i class="bi bi-download"></i> {{ model.downloads_count }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar"></i> {{ model.created_at|date:"d.m.Y" }}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'collaboration:model_detail' model.pk %}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i> Посмотреть
+                            </a>
+                            <a href="{% url 'collaboration:unpublish_model' model.pk %}" 
+                               class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Снять с публикации
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-folder2-open display-1 text-muted"></i>
+        <p class="lead text-muted mt-3">У вас пока нет публикаций</p>
+        <a href="{% url 'datasets:model_list' %}" class="btn btn-primary">
+            <i class="bi bi-upload"></i> Опубликовать модель
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
