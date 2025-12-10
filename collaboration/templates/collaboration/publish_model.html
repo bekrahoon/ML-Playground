@@ -1,49 +1,102 @@
 {% extends 'base.html' %}
 
-{% block title %}Подтверждение - ML Playground{% endblock %}
+{% block title %}Опубликовать модель - ML Playground{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-exclamation-triangle"></i> Подтверждение
-                </h5>
+    <div class="col-md-8">
+        <h2 class="mb-4"><i class="bi bi-upload"></i> Опубликовать модель</h2>
+        
+        <div class="alert alert-info">
+            <h6><i class="bi bi-info-circle"></i> Что дает публикация?</h6>
+            <ul class="mb-0">
+                <li>Ваша модель станет доступна сообществу</li>
+                <li>Другие пользователи смогут оценить и прокомментировать</li>
+                <li>Модель можно будет найти по тегам</li>
+                <li>Пользователи смогут скопировать модель себе</li>
+            </ul>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Публикуемая модель</h5>
             </div>
             <div class="card-body">
-                <p>Вы уверены, что хотите снять модель с публикации?</p>
-                <div class="alert alert-light border">
-                    <strong>{{ public_model.title }}</strong><br>
-                    <small class="text-muted">
-                        Алгоритм: {{ public_model.original_model.get_algorithm_display }}
-                    </small>
-                </div>
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <strong>Внимание!</strong>
-                    <ul class="mb-0 mt-2">
-                        <li>Модель исчезнет из сообщества</li>
-                        <li>Все лайки ({{ public_model.likes_count }}) и комментарии будут удалены</li>
-                        <li>Оригинальная модель останется у вас в "Мои модели"</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="card-footer">
-                <div class="d-flex gap-2">
-                    <form method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash"></i> Да, снять с публикации
-                        </button>
-                    </form>
-                    <a href="{% url 'collaboration:model_detail' public_model.pk %}" 
-                       class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Отмена
-                    </a>
-                </div>
+                <p><strong>Название:</strong> {{ original_model.name }}</p>
+                <p><strong>Алгоритм:</strong> {{ original_model.get_algorithm_display }}</p>
+                <p><strong>Датасет:</strong> {{ original_model.dataset.name }}</p>
+                {% if original_model.accuracy %}
+                    <p><strong>Accuracy:</strong> {{ original_model.accuracy|floatformat:4 }}</p>
+                {% endif %}
+                {% if original_model.r2_score %}
+                    <p><strong>R² Score:</strong> {{ original_model.r2_score|floatformat:4 }}</p>
+                {% endif %}
             </div>
         </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="text-danger">{{ form.title.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                {{ form.description }}
+                <small class="form-text text-muted">
+                    Опишите подробно: что делает модель, как её использовать, какие особенности
+                </small>
+                {% if form.description.errors %}
+                    <div class="text-danger">{{ form.description.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.tags.id_for_label }}" class="form-label">{{ form.tags.label }}</label>
+                {{ form.tags }}
+                <small class="form-text text-muted">{{ form.tags.help_text }}</small>
+                {% if form.tags.errors %}
+                    <div class="text-danger">{{ form.tags.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.use_cases.id_for_label }}" class="form-label">{{ form.use_cases.label }}</label>
+                {{ form.use_cases }}
+                {% if form.use_cases.errors %}
+                    <div class="text-danger">{{ form.use_cases.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">{{ form.visibility.label }}</label>
+                <div class="mt-2">
+                    {% for radio in form.visibility %}
+                        <div class="form-check">
+                            {{ radio.tag }}
+                            <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                {{ radio.choice_label }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-upload"></i> Опубликовать
+                </button>
+                <a href="{% url 'datasets:model_list' %}" 
+                   class="btn btn-secondary btn-lg">
+                    <i class="bi bi-x-circle"></i> Отмена
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
