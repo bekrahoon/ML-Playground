@@ -14,14 +14,9 @@
     <div class="row">
         {% for model in models %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 {% if model.experiment and model.experiment.best_model == model %}border-success border-2{% endif %}">
-                    <div class="card-header {% if model.experiment and model.experiment.best_model == model %}bg-success{% else %}bg-primary{% endif %} text-white">
-                        <h5 class="mb-0">
-                            {% if model.experiment and model.experiment.best_model == model %}
-                                <i class="bi bi-trophy-fill"></i>
-                            {% endif %}
-                            {{ model.name|truncatechars:30 }}
-                        </h5>
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">{{ model.name|truncatechars:40 }}</h6>
                     </div>
                     <div class="card-body">
                         <div class="mb-2">
@@ -31,9 +26,7 @@
                         
                         <div class="mb-2">
                             <strong>Датасет:</strong>
-                            <a href="{% url 'datasets:dataset_detail' model.dataset.pk %}">
-                                {{ model.dataset.name }}
-                            </a>
+                            <small>{{ model.dataset.name|truncatechars:30 }}</small>
                         </div>
                         
                         <div class="mb-2">
@@ -41,46 +34,32 @@
                             <code>{{ model.target_column }}</code>
                         </div>
                         
-                        {% if model.experiment %}
-                            <div class="mb-2">
-                                <strong>Эксперимент:</strong>
-                                <a href="{% url 'datasets:experiment_detail' model.experiment.pk %}">
-                                    {{ model.experiment.name }}
-                                </a>
-                            </div>
-                        {% endif %}
-                        
-                        <hr>
-                        
-                        <div class="mb-2">
-                            <strong>Метрики:</strong>
-                        </div>
-                        
+                        <!-- Метрики -->
                         {% if model.accuracy %}
-                            <div class="d-flex justify-content-between">
-                                <span><i class="bi bi-bullseye text-success"></i> Accuracy:</span>
-                                <strong>{{ model.accuracy|floatformat:4 }}</strong>
+                            <div class="mb-2">
+                                <strong>Accuracy:</strong>
+                                <span class="badge bg-success">{{ model.accuracy|floatformat:4 }}</span>
                             </div>
                         {% endif %}
                         
                         {% if model.f1_score %}
-                            <div class="d-flex justify-content-between">
-                                <span><i class="bi bi-graph-up text-info"></i> F1 Score:</span>
-                                <strong>{{ model.f1_score|floatformat:4 }}</strong>
+                            <div class="mb-2">
+                                <strong>F1 Score:</strong>
+                                <span class="badge bg-success">{{ model.f1_score|floatformat:4 }}</span>
                             </div>
                         {% endif %}
                         
                         {% if model.r2_score %}
-                            <div class="d-flex justify-content-between">
-                                <span><i class="bi bi-bar-chart text-primary"></i> R² Score:</span>
-                                <strong>{{ model.r2_score|floatformat:4 }}</strong>
+                            <div class="mb-2">
+                                <strong>R² Score:</strong>
+                                <span class="badge bg-info">{{ model.r2_score|floatformat:4 }}</span>
                             </div>
                         {% endif %}
                         
                         {% if model.rmse %}
-                            <div class="d-flex justify-content-between">
-                                <span><i class="bi bi-dash-circle text-warning"></i> RMSE:</span>
-                                <strong>{{ model.rmse|floatformat:4 }}</strong>
+                            <div class="mb-2">
+                                <strong>RMSE:</strong>
+                                <span class="badge bg-warning text-dark">{{ model.rmse|floatformat:4 }}</span>
                             </div>
                         {% endif %}
                         
@@ -92,19 +71,38 @@
                     </div>
                     <div class="card-footer bg-transparent">
                         <div class="d-grid gap-2">
-                            <a href="{% url 'datasets:model_detail' model.pk %}" class="btn btn-sm btn-primary">
+                            <!-- Подробнее -->
+                            <a href="{% url 'datasets:model_detail' model.pk %}" 
+                               class="btn btn-sm btn-primary">
                                 <i class="bi bi-eye"></i> Подробнее
                             </a>
                             
+                            <!-- Экспорт -->
                             <div class="btn-group" role="group">
-                                <a href="{% url 'datasets:export_pdf' model.pk %}" class="btn btn-sm btn-outline-danger">
+                                <a href="{% url 'datasets:export_pdf' model.pk %}" 
+                                   class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-file-pdf"></i> PDF
                                 </a>
-                                <a href="{% url 'datasets:export_excel' model.pk %}" class="btn btn-sm btn-outline-success">
+                                <a href="{% url 'datasets:export_excel' model.pk %}" 
+                                   class="btn btn-sm btn-outline-success">
                                     <i class="bi bi-file-excel"></i> Excel
                                 </a>
                             </div>
                             
+                            <!-- Опубликовать / Уже опубликована -->
+                            {% if model.public_model %}
+                                <a href="{% url 'collaboration:model_detail' model.public_model.pk %}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-circle"></i> Опубликовано в сообществе
+                                </a>
+                            {% else %}
+                                <a href="{% url 'collaboration:publish_model' model.pk %}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="bi bi-upload"></i> Опубликовать в сообщество
+                                </a>
+                            {% endif %}
+                            
+                            <!-- Удалить -->
                             <button type="button" class="btn btn-sm btn-outline-danger" 
                                     data-bs-toggle="modal" 
                                     data-bs-target="#deleteModal{{ model.pk }}">
@@ -115,7 +113,7 @@
                 </div>
             </div>
             
-            <!-- Modal для подтверждения удаления -->
+            <!-- Modal для удаления -->
             <div class="modal fade" id="deleteModal{{ model.pk }}" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
@@ -126,31 +124,35 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <p>Вы уверены, что хотите удалить модель <strong>"{{ model.name }}"</strong>?</p>
+                            <p>Вы уверены, что хотите удалить модель?</p>
+                            <div class="alert alert-light border">
+                                <strong>{{ model.name }}</strong><br>
+                                <small class="text-muted">Алгоритм: {{ model.get_algorithm_display }}</small><br>
+                                <small class="text-muted">Датасет: {{ model.dataset.name }}</small>
+                            </div>
                             <div class="alert alert-warning">
                                 <i class="bi bi-exclamation-triangle"></i>
-                                <strong>Внимание!</strong> Это действие нельзя отменить.
-                                Файл модели (.pkl) будет удален навсегда.
+                                <strong>Внимание!</strong> Это действие нельзя отменить.<br>
+                                Будет удален:
+                                <ul class="mb-0 mt-2">
+                                    <li>Файл модели (.pkl)</li>
+                                    {% if model.experiment %}
+                                        <li>Связь с экспериментом "{{ model.experiment.name }}"</li>
+                                    {% endif %}
+                                    {% if model.public_model %}
+                                        <li>Публикация в сообществе</li>
+                                    {% endif %}
+                                </ul>
                             </div>
-                            <div class="mb-2">
-                                <strong>Информация о модели:</strong>
-                            </div>
-                            <ul>
-                                <li>Алгоритм: {{ model.get_algorithm_display }}</li>
-                                <li>Датасет: {{ model.dataset.name }}</li>
-                                {% if model.experiment %}
-                                    <li>Часть эксперимента: {{ model.experiment.name }}</li>
-                                {% endif %}
-                            </ul>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                Отмена
+                                <i class="bi bi-x-circle"></i> Отмена
                             </button>
                             <form method="post" action="{% url 'datasets:model_delete' model.pk %}" style="display: inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-danger">
-                                    <i class="bi bi-trash"></i> Удалить модель
+                                    <i class="bi bi-trash"></i> Да, удалить модель
                                 </button>
                             </form>
                         </div>
@@ -163,7 +165,7 @@
     <div class="text-center py-5">
         <i class="bi bi-cpu display-1 text-muted"></i>
         <p class="lead text-muted mt-3">У вас пока нет обученных моделей</p>
-        <p class="text-muted">Загрузите датасет и обучите свою первую модель</p>
+        <p class="text-muted">Обучите модель на одном из ваших датасетов</p>
         <a href="{% url 'datasets:dataset_list' %}" class="btn btn-primary mt-3">
             <i class="bi bi-database"></i> Перейти к датасетам
         </a>
