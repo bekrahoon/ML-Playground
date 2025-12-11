@@ -170,15 +170,66 @@
                 {% endif %}
                 
                 {% for comment in comments %}
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between">
-                            <strong>{{ comment.author.username }}</strong>
-                            <small class="text-muted">
-                                {{ comment.created_at|date:"d.m.Y H:i" }}
-                            </small>
+                    <div class="mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <strong>{{ comment.author.username }}</strong>
+                                    <small class="text-muted">
+                                        {{ comment.created_at|date:"d.m.Y H:i" }}
+                                    </small>
+                                    {% if comment.is_edited %}
+                                        <small class="badge bg-secondary">изменено</small>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-0">{{ comment.text }}</p>
+                            </div>
+                            
+                            {% if user == comment.author %}
+                                <div class="btn-group btn-group-sm ms-2">
+                                    <a href="{% url 'collaboration:edit_comment' comment.pk %}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-outline-danger btn-sm"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteCommentModal{{ comment.pk }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            {% endif %}
                         </div>
-                        <p class="mb-0">{{ comment.text }}</p>
                     </div>
+                    
+                    <!-- Modal для удаления комментария -->
+                    {% if user == comment.author %}
+                        <div class="modal fade" id="deleteCommentModal{{ comment.pk }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h6 class="modal-title">Удалить комментарий?</h6>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="small mb-0">Это действие нельзя отменить.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+                                            Отмена
+                                        </button>
+                                        <form method="post" action="{% url 'collaboration:delete_comment' comment.pk %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                Удалить
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
                     {% if not forloop.last %}<hr>{% endif %}
                 {% empty %}
                     <p class="text-muted text-center">Пока нет комментариев. Будьте первым!</p>

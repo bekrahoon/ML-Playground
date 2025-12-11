@@ -17,6 +17,8 @@ urlpatterns = [
     path('models/<int:pk>/like/', views.toggle_like, name='toggle_like'),
     path('models/<int:pk>/comment/', views.add_comment, name='add_comment'),
     path('models/<int:pk>/fork/', views.fork_model, name='fork_model'),
+    path('comments/<int:pk>/edit/', views.edit_comment, name='edit_comment'),
+    path('comments/<int:pk>/delete/', views.delete_comment, name='delete_comment'),
     
     # Личное
     path('my/', views.my_publications, name='my_publications'),

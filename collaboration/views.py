@@ -503,3 +503,46 @@ def leaderboard(request):
         'top_authors': top_authors,
         'top_models': top_models
     })
+
+
+
+@login_required
+def edit_comment(request, pk):
+    """Редактирование комментария"""
+    comment = get_object_or_404(ModelComment, pk=pk)
+    
+    if comment.author != request.user:
+        return HttpResponseForbidden('Вы не можете редактировать чужой комментарий')
+    
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        if text:
+            comment.text = text
+            comment.is_edited = True
+            comment.save()
+            messages.success(request, 'Комментарий обновлен')
+        return redirect('collaboration:model_detail', pk=comment.public_model.pk)
+    
+    return render(request, 'collaboration/edit_comment.html', {
+        'comment': comment
+    })
+
+
+@login_required
+def delete_comment(request, pk):
+    """Удаление комментария"""
+    comment = get_object_or_404(ModelComment, pk=pk)
+    
+    if comment.author != request.user:
+        return HttpResponseForbidden('Вы не можете удалить чужой комментарий')
+    
+    model_pk = comment.public_model.pk
+    
+    if request.method == 'POST':
+        comment.delete()
+        messages.success(request, 'Комментарий удален')
+        return redirect('collaboration:model_detail', pk=model_pk)
+    
+    return render(request, 'collaboration/delete_comment.html', {
+        'comment': comment
+    })
